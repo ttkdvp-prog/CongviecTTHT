@@ -83,9 +83,19 @@ function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+const SPREADSHEET_ID = "1r2lWfbeHh7LXqOOH1Dmgd4IEwgudw3kGqbk3UORKDVc";
+
+function getSs() {
+  try {
+    return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch (e) {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
+}
+
 // Khởi tạo hoặc lấy Sheet cần thiết
 function setupSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSs();
   let tasks, subtasks, assignees, attachments;
   
   // Kiểm tra và tạo các sheet nếu chưa tồn tại
@@ -158,7 +168,7 @@ function setupSheets() {
 // Tạo dữ liệu mẫu
 function initializeSampleData() {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSs();
     const tasks = ss.getSheetByName("Tasks");
     const subtasks = ss.getSheetByName("Subtasks");
     const assignees = ss.getSheetByName("Assignees");
@@ -209,7 +219,7 @@ function initializeSampleData() {
 
 // Hàm lấy dữ liệu người dùng
 function getUsers() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSs();
   const usersSheet = ss.getSheetByName("Users");
   const usersData = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 3).getValues();
   
@@ -228,7 +238,7 @@ function addUser(userData) {
       return { success: false, message: "Tên và chữ viết tắt không được để trống" };
     }
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSs();
     const usersSheet = ss.getSheetByName("Users");
     
     if (!usersSheet) {
@@ -290,7 +300,7 @@ function updateUser(userData) {
       return { success: false, message: "Thiếu thông tin người dùng" };
     }
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSs();
     const usersSheet = ss.getSheetByName("Users");
     
     if (!usersSheet) {
@@ -337,7 +347,7 @@ function deleteUser(userId) {
       return { success: false, message: "Thiếu ID người dùng" };
     }
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSs();
     const usersSheet = ss.getSheetByName("Users");
     
     if (!usersSheet) {
@@ -383,7 +393,7 @@ function checkUserInUse(userId) {
       return { inUse: false, error: "Thiếu ID người dùng" };
     }
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSs();
     const assigneesSheet = ss.getSheetByName("Assignees");
     
     if (!assigneesSheet) {
@@ -583,7 +593,7 @@ function addTask(taskData) {
     // Thêm người phụ trách
     if (taskData.assignees && taskData.assignees.length > 0) {
       // Lấy thông tin người dùng từ sheet Users
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ss = getSs();
       const usersSheet = ss.getSheetByName("Users");
       const usersData = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 3).getValues();
       const usersMap = {};
@@ -750,7 +760,7 @@ function updateTask(taskData) {
     // Thêm người phụ trách mới
     if (taskData.assignees && taskData.assignees.length > 0) {
       // Lấy thông tin người dùng từ sheet Users
-      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const ss = getSs();
       const usersSheet = ss.getSheetByName("Users");
       const usersData = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 3).getValues();
       const usersMap = {};

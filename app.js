@@ -24,6 +24,8 @@ const api = {
 /* ===== State ===== */
 let allTasks = [];
 let users = [];
+let currentGanttMonth = new Date().getMonth();
+let currentGanttYear = new Date().getFullYear();
 
 /* ===== DOM Refs ===== */
 const $ = id => document.getElementById(id);
@@ -47,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
   $('add-user-btn').addEventListener('click', () => openUserModal());
   $('add-subtask-btn').addEventListener('click', addSubtaskInput);
   $('subtask-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskInput(); } });
+  $('prev-month-btn').addEventListener('click', () => navigateGanttMonth(-1));
+  $('next-month-btn').addEventListener('click', () => navigateGanttMonth(1));
+  initGanttScrollSync();
   loadAllData();
 });
 
@@ -112,6 +117,7 @@ function renderAll() {
   renderKanban();
   renderListView();
   renderUsersView();
+  renderGanttView();
   populateAssigneePicker();
   populateFilterDropdowns();
 }
@@ -533,8 +539,295 @@ function filterAndRender() {
 
   renderKanban(filtered);
   renderListView(filtered);
+  renderGanttView(filtered);
 
   if (filtered.length < allTasks.length) {
     toast(`Hiển thị ${filtered.length}/${allTasks.length} công việc`, 'warning');
   }
+}
+
+/* ===== Gantt Chart View ===== */
+function renderGanttView(tasks) {
+  const list = tasks || allTasks;
+  const sideBody = document.querySelector('.gantt-side-body');
+  const timelineBody = document.querySelector('.gantt-timeline-body');
+  if (!sideBody || !timelineBody) return;
+  
+  sideBody.innerHTML = '';
+  timelineBody.innerHTML = '';
+  
+  const allHeaders = document.querySelectorAll('.gantt-side-header, .gantt-task-header, .gantt-status-header');
+  allHeaders.forEach(header => {
+    header.style.border = 'none';
+    header.style.outline = 'none';
+    header.style.boxShadow = '0 1px 0 var(--glass-border)';
+  });
+  
+  const daysContainer = document.querySelector('.gantt-days');
+  if (!daysContainer) return;
+  daysContainer.innerHTML = '';
+  
+  const monthElement = document.querySelector('.gantt-month');
+  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+  if (monthElement) {
+    monthElement.textContent = `${monthNames[currentGanttMonth]}, ${currentGanttYear}`;
+  }
+  
+  const daysInMonth = new Date(currentGanttYear, currentGanttMonth + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(currentGanttYear, currentGanttMonth, day);
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const dayElement = document.createElement('div');
+    dayElement.className = `gantt-day${isWeekend ? ' weekend' : ''}`;
+    dayElement.textContent = day;
+    daysContainer.appendChild(dayElement);
+  }
+  
+  list.forEach(task => {
+    if (!task.startDate || !task.dueDate) return;
+    
+    try {
+      let startDate, dueDate;
+      
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(task.startDate) && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(task.dueDate)) {
+        const startParts = task.startDate.split('/');
+        const dueParts = task.dueDate.split('/');
+        if (startParts.length === 3 && dueParts.length === 3) {
+          startDate = new Date(parseInt(startParts[2]), parseInt(startParts[1]) - 1, parseInt(startParts[0]));
+          dueDate = new Date(parseInt(dueParts[2]), parseInt(dueParts[1]) - 1, parseInt(dueParts[0]));
+        } else {
+          return;
+        }
+      } else {
+        startDate = new Date(task.startDate);
+        dueDate = new Date(task.dueDate);
+        if (isNaN(startDate.getTime()) || isNaN(dueDate.getTime())) return;
+      }
+      
+      const startMonth = startDate.getMonth();
+      const startYear = startDate.getFullYear();
+      const dueMonth = dueDate.getMonth();
+      const dueYear = dueDate.getFullYear();
+      
+      const isVisible = (
+        (startMonth === currentGanttMonth && startYear === currentGanttYear) ||
+        (dueMonth === currentGanttMonth && dueYear === currentGanttYear) ||
+        (
+          (startYear < currentGanttYear || (startYear === currentGanttYear && startMonth < currentGanttMonth)) &&
+          (dueYear > currentGanttYear || (dueYear === currentGanttYear && dueMonth > currentGanttMonth))
+        )
+      );
+      
+      if (!isVisible) return;
+      
+      let startDay = 1;
+      let endDay = daysInMonth;
+      
+      if (startMonth === currentGanttMonth && startYear === currentGanttYear) {
+        startDay = startDate.getDate();
+      }
+      if (dueMonth === currentGanttMonth && dueYear === currentGanttYear) {
+        endDay = dueDate.getDate();
+      }
+      
+      const leftPosition = ((startDay - 1) / daysInMonth) * 100;
+      const width = Math.max(((endDay - startDay + 1) / daysInMonth) * 100, 2);
+      
+      let assigneesHtml = '';
+      if (task.assignees && task.assignees.length > 0) {
+        assigneesHtml = '<div class="gantt-bar-assignees">';
+        task.assignees.forEach(assigneeId => {
+          const user = users.find(u => u.id === assigneeId);
+          if (user) {
+            assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name}">${user.initials}</div>`;
+          }
+        });
+        assigneesHtml += '</div>';
+      }
+      
+      let attachmentsHtml = '';
+      if (task.attachments && task.attachments.length > 0) {
+        attachmentsHtml = '<div class="gantt-bar-attachments">';
+        task.attachments.forEach(attachment => {
+          let iconClass = 'file';
+          if (attachment.type === 'image') iconClass = 'image';
+          else if (attachment.name.endsWith('.pdf')) iconClass = 'file-pdf';
+          else if (attachment.name.endsWith('.doc') || attachment.name.endsWith('.docx')) iconClass = 'file-word';
+          else if (attachment.name.endsWith('.xls') || attachment.name.endsWith('.xlsx')) iconClass = 'file-excel';
+          
+          attachmentsHtml += `
+            <div class="gantt-bar-attachment" onclick="window.open('${attachment.url}', '_blank'); event.stopPropagation();" title="${attachment.name}">
+              <i class="far fa-${iconClass}"></i>
+            </div>
+          `;
+        });
+        attachmentsHtml += '</div>';
+      }
+      
+      const taskRow = document.createElement('div');
+      taskRow.className = 'gantt-task-row';
+      taskRow.dataset.id = task.id;
+      taskRow.innerHTML = `
+        <div class="gantt-task-cell">
+          <div class="gantt-task-title">
+            <span class="task-expander expanded"><i class="fas fa-caret-down"></i></span>
+            <span class="priority ${task.priority}"></span>
+            <strong>${task.title}</strong>
+          </div>
+        </div>
+        <div class="gantt-status-cell">
+          <span class="badge badge-${task.status}">${statusText(task.status)}</span>
+        </div>
+      `;
+      sideBody.appendChild(taskRow);
+      
+      const timelineRow = document.createElement('div');
+      timelineRow.className = 'gantt-timeline-row';
+      timelineRow.dataset.id = task.id;
+      timelineRow.innerHTML = `
+        <div class="gantt-bar-container">
+          <div class="gantt-bar ${task.status}" style="left: ${leftPosition}%; width: ${width}%;">
+            <div class="gantt-bar-label">${fmtDate(task.startDate)} - ${fmtDate(task.dueDate)}</div>
+            <div class="gantt-progress" style="width: ${task.progress || 0}%"></div>
+            ${assigneesHtml}
+            ${attachmentsHtml}
+          </div>
+        </div>
+      `;
+      timelineBody.appendChild(timelineRow);
+      
+      if (task.subtasks && task.subtasks.length > 0) {
+        task.subtasks.forEach((subtask, index) => {
+          const subtaskRow = document.createElement('div');
+          subtaskRow.className = 'gantt-subtask-row';
+          subtaskRow.dataset.parent = task.id;
+          subtaskRow.innerHTML = `
+            <div class="gantt-task-cell">
+              <div class="gantt-subtask-title" style="padding-left: 24px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="gantt-subtask-${task.id}-${index}" ${subtask.completed ? 'checked' : ''} onchange="toggleGanttSubtask('${task.id}', ${index}, this.checked)">
+                <label for="gantt-subtask-${task.id}-${index}" style="font-size: 0.85rem; cursor: pointer; color: var(--text2);">${subtask.text}</label>
+              </div>
+            </div>
+            <div class="gantt-status-cell"></div>
+          `;
+          sideBody.appendChild(subtaskRow);
+          
+          const subtaskTimelineRow = document.createElement('div');
+          subtaskTimelineRow.className = 'gantt-timeline-row subtask';
+          subtaskTimelineRow.dataset.parent = task.id;
+          timelineBody.appendChild(subtaskTimelineRow);
+        });
+      }
+    } catch (e) {
+      console.error('Error rendering Gantt row for task:', task.id, e);
+    }
+  });
+  
+  initGanttInteractive();
+}
+
+function toggleGanttSubtask(taskId, subtaskIndex, isChecked) {
+  const task = allTasks.find(t => t.id === taskId);
+  if (task && task.subtasks && task.subtasks[subtaskIndex]) {
+    task.subtasks[subtaskIndex].completed = isChecked;
+    const completedCount = task.subtasks.filter(s => s.completed).length;
+    const progress = Math.round(completedCount / task.subtasks.length * 100);
+    task.progress = progress;
+    renderAll();
+    api.post('updateTask', { data: task }).then(res => {
+      if (res && res.success !== false) {
+        toast('Đã cập nhật tiến độ công việc con!');
+      } else {
+        toast('Lỗi cập nhật tiến độ!', 'error');
+      }
+    });
+  }
+}
+
+function initGanttInteractive() {
+  document.querySelectorAll('.task-expander').forEach(expander => {
+    expander.addEventListener('click', function() {
+      const taskId = this.closest('.gantt-task-row').dataset.id;
+      const subtasks = document.querySelectorAll(`.gantt-subtask-row[data-parent="${taskId}"]`);
+      const subtaskTimelines = document.querySelectorAll(`.gantt-timeline-row.subtask[data-parent="${taskId}"]`);
+      
+      const isExpanded = this.classList.contains('expanded');
+      if (isExpanded) {
+        this.classList.remove('expanded');
+        this.classList.add('collapsed');
+        this.querySelector('i').className = 'fas fa-caret-right';
+        subtasks.forEach(el => el.style.display = 'none');
+        subtaskTimelines.forEach(el => el.style.display = 'none');
+      } else {
+        this.classList.remove('collapsed');
+        this.classList.add('expanded');
+        this.querySelector('i').className = 'fas fa-caret-down';
+        subtasks.forEach(el => el.style.display = 'flex');
+        subtaskTimelines.forEach(el => el.style.display = 'block');
+      }
+    });
+  });
+  
+  document.querySelectorAll('.gantt-bar').forEach(bar => {
+    bar.addEventListener('mouseover', function() {
+      const taskId = this.closest('.gantt-timeline-row').dataset.id;
+      const taskRow = document.querySelector(`.gantt-task-row[data-id="${taskId}"]`);
+      if (taskRow) taskRow.classList.add('highlight');
+    });
+    bar.addEventListener('mouseout', function() {
+      const taskId = this.closest('.gantt-timeline-row').dataset.id;
+      const taskRow = document.querySelector(`.gantt-task-row[data-id="${taskId}"]`);
+      if (taskRow) taskRow.classList.remove('highlight');
+    });
+  });
+  
+  const timeline = document.querySelector('.gantt-timeline');
+  if (timeline) {
+    let isScrolling = false;
+    let startX, scrollLeft;
+    timeline.addEventListener('mousedown', e => {
+      if (e.target.closest('.gantt-bar')) return;
+      isScrolling = true;
+      startX = e.pageX - timeline.offsetLeft;
+      scrollLeft = timeline.scrollLeft;
+      timeline.style.cursor = 'grabbing';
+    });
+    timeline.addEventListener('mouseleave', () => { isScrolling = false; timeline.style.cursor = 'auto'; });
+    timeline.addEventListener('mouseup', () => { isScrolling = false; timeline.style.cursor = 'auto'; });
+    timeline.addEventListener('mousemove', e => {
+      if (!isScrolling) return;
+      e.preventDefault();
+      const x = e.pageX - timeline.offsetLeft;
+      const walk = (x - startX) * 2;
+      timeline.scrollLeft = scrollLeft - walk;
+    });
+  }
+}
+
+function initGanttScrollSync() {
+  const sideBody = document.querySelector('.gantt-side-body');
+  const timelineBody = document.querySelector('.gantt-timeline-body');
+  if (sideBody && timelineBody) {
+    sideBody.addEventListener('scroll', () => {
+      timelineBody.scrollTop = sideBody.scrollTop;
+    });
+    timelineBody.addEventListener('scroll', () => {
+      sideBody.scrollTop = timelineBody.scrollTop;
+    });
+  }
+}
+
+function navigateGanttMonth(direction) {
+  let newMonth = currentGanttMonth + direction;
+  let newYear = currentGanttYear;
+  if (newMonth < 0) {
+    newMonth = 11;
+    newYear--;
+  } else if (newMonth > 11) {
+    newMonth = 0;
+    newYear++;
+  }
+  currentGanttMonth = newMonth;
+  currentGanttYear = newYear;
+  renderGanttView();
 }

@@ -42,6 +42,10 @@
         <i class="fas fa-table-list"></i>
         <span>Danh sách</span>
       </a>
+      <a href="#" class="nav-link" data-view="gantt" id="nav-gantt">
+        <i class="fas fa-chart-gantt"></i>
+        <span>Biểu đồ Gantt</span>
+      </a>
       <a href="#" class="nav-link" data-view="users" id="nav-users">
         <i class="fas fa-users-gear"></i>
         <span>Người dùng</span>
@@ -205,6 +209,38 @@
             <tr><td colspan="8" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu...</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ==================== GANTT VIEW ==================== -->
+    <section class="view" id="gantt-view">
+      <div class="gantt-container glass">
+        <div class="gantt-side">
+          <div class="gantt-side-header">
+            <div class="gantt-task-header">Công việc</div>
+            <div class="gantt-status-header">Trạng thái</div>
+          </div>
+          <div class="gantt-side-body">
+            <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
+          </div>
+        </div>
+        
+        <div class="gantt-timeline">
+          <div class="gantt-timeline-header">
+            <div class="gantt-month-controls">
+              <button id="prev-month-btn" class="month-nav-btn"><i class="fas fa-chevron-left"></i></button>
+              <div class="gantt-month">Tháng 7, 2026</div>
+              <button id="next-month-btn" class="month-nav-btn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="gantt-days">
+              <!-- Ngày sẽ được thêm ở đây bằng JavaScript -->
+            </div>
+          </div>
+          
+          <div class="gantt-timeline-body">
+            <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
+          </div>
+        </div>
       </div>
     </section>
 
