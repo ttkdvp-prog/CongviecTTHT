@@ -38,6 +38,9 @@ function handleApiRequest(params) {
       case 'getUsers':
         result = getUsers();
         break;
+      case 'getTeams':
+        result = getTeams();
+        break;
       case 'addTask':
         var taskData = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
         result = addTask(taskData);
@@ -217,17 +220,83 @@ function initializeSampleData() {
   }
 }
 
-// Hàm lấy dữ liệu người dùng
+// Hàm lấy dữ liệu người dùng có kèm thông tin Tổ (Team)
 function getUsers() {
-  const ss = getSs();
-  const usersSheet = ss.getSheetByName("Users");
-  const usersData = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 3).getValues();
-  
-  return usersData.map(row => ({
-    id: row[0],
-    name: row[1],
-    initials: row[2]
-  }));
+  try {
+    const ss = getSs();
+    const usersSheet = ss.getSheetByName("Users");
+    if (!usersSheet) return [];
+    
+    const lastRow = usersSheet.getLastRow();
+    if (lastRow <= 1) return [];
+    
+    const usersData = usersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+    const nameToTeam = getTeamsData();
+    
+    return usersData.map(row => {
+      const name = String(row[1]);
+      const team = nameToTeam[name.trim().toLowerCase()] || "";
+      return {
+        id: String(row[0]),
+        name: name,
+        initials: String(row[2]),
+        team: team
+      };
+    });
+  } catch(e) {
+    Logger.log("Lỗi khi lấy danh sách người dùng: " + e.toString());
+    return [];
+  }
+}
+
+// Lấy thông tin ánh xạ Họ tên -> Tổ từ sheet "To"
+function getTeamsData() {
+  try {
+    const ss = getSs();
+    const toSheet = ss.getSheetByName("To");
+    if (!toSheet) return {};
+    
+    const lastRow = toSheet.getLastRow();
+    if (lastRow <= 1) return {};
+    
+    const data = toSheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    const nameToTeam = {};
+    data.forEach(row => {
+      const team = row[0]; // Cột A: Tổ
+      const name = row[2]; // Cột C: Họ và tên
+      if (name && team) {
+        nameToTeam[String(name).trim().toLowerCase()] = String(team).trim();
+      }
+    });
+    return nameToTeam;
+  } catch(e) {
+    Logger.log("Lỗi lấy thông tin ánh xạ Tổ: " + e.toString());
+    return {};
+  }
+}
+
+// Lấy danh sách tên các Tổ độc nhất từ sheet "To"
+function getTeams() {
+  try {
+    const ss = getSs();
+    const toSheet = ss.getSheetByName("To");
+    if (!toSheet) return [];
+    
+    const lastRow = toSheet.getLastRow();
+    if (lastRow <= 1) return [];
+    
+    const data = toSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    const teamsSet = new Set();
+    data.forEach(row => {
+      if (row[0]) {
+        teamsSet.add(String(row[0]).trim());
+      }
+    });
+    return Array.from(teamsSet);
+  } catch(e) {
+    Logger.log("Lỗi lấy danh sách Tổ: " + e.toString());
+    return [];
+  }
 }
 
 // Thêm người dùng mới

@@ -24,6 +24,7 @@ const api = {
 /* ===== State ===== */
 let allTasks = [];
 let users = [];
+let allTeams = [];
 let currentGanttMonth = new Date().getMonth();
 let currentGanttYear = new Date().getFullYear();
 
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('add-user-btn').addEventListener('click', () => openUserModal());
   $('add-subtask-btn').addEventListener('click', addSubtaskInput);
   $('subtask-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskInput(); } });
+  $('global-team-filter').addEventListener('change', filterAndRender);
   $('prev-month-btn').addEventListener('click', () => navigateGanttMonth(-1));
   $('next-month-btn').addEventListener('click', () => navigateGanttMonth(1));
   initGanttScrollSync();
@@ -92,9 +94,14 @@ function setupNavigation() {
 async function loadAllData() {
   showLoading();
   try {
-    const [tasks, usersData] = await Promise.all([api.get('getTasks'), api.get('getUsers')]);
+    const [tasks, usersData, teamsData] = await Promise.all([
+      api.get('getTasks'),
+      api.get('getUsers'),
+      api.get('getTeams')
+    ]);
     allTasks = Array.isArray(tasks) ? tasks : [];
     users = Array.isArray(usersData) ? usersData : [];
+    allTeams = Array.isArray(teamsData) ? teamsData : [];
     renderAll();
     toast('Dữ liệu đã tải thành công!');
   } catch(e) {
@@ -120,6 +127,7 @@ function renderAll() {
   renderGanttView();
   populateAssigneePicker();
   populateFilterDropdowns();
+  populateTeamFilter();
 }
 
 /* ===== Helpers ===== */
@@ -145,12 +153,13 @@ function fromInputDate(d) {
 }
 
 /* ===== Dashboard ===== */
-function renderDashboard() {
-  const total = allTasks.length;
-  const prog = allTasks.filter(t => t.status === 'inprogress').length;
-  const done = allTasks.filter(t => t.status === 'done').length;
-  const over = allTasks.filter(t => t.status === 'overdue').length;
-  const canc = allTasks.filter(t => t.status === 'cancelled').length;
+function renderDashboard(tasks) {
+  const list = tasks || allTasks;
+  const total = list.length;
+  const prog = list.filter(t => t.status === 'inprogress').length;
+  const done = list.filter(t => t.status === 'done').length;
+  const over = list.filter(t => t.status === 'overdue').length;
+  const canc = list.filter(t => t.status === 'cancelled').length;
 
   $('stat-total-val').textContent = total;
   $('stat-progress-val').textContent = prog;
@@ -182,13 +191,13 @@ function renderDashboard() {
   }
 
   // High priority
-  const highPri = allTasks.filter(t => t.priority === 'high' && t.status !== 'done' && t.status !== 'cancelled').slice(0, 5);
+  const highPri = list.filter(t => t.priority === 'high' && t.status !== 'done' && t.status !== 'cancelled').slice(0, 5);
   const hpList = $('high-priority-list');
   if (highPri.length === 0) { hpList.innerHTML = '<div class="empty-state-sm"><i class="fas fa-check-double"></i> Không có công việc ưu tiên cao</div>'; }
   else { hpList.innerHTML = highPri.map(t => `<div class="priority-item"><span class="task-name-col">${t.title}</span><span class="badge badge-${t.status}">${statusText(t.status)}</span></div>`).join(''); }
 
   // Recent tasks
-  const recent = [...allTasks].slice(0, 6);
+  const recent = [...list].slice(0, 6);
   const recList = $('recent-tasks');
   if (recent.length === 0) { recList.innerHTML = '<div class="empty-state-sm"><i class="fas fa-inbox"></i> Chưa có công việc nào</div>'; }
   else { recList.innerHTML = recent.map(t => `<div class="recent-item"><span class="task-name-col">${t.title}</span><span class="badge badge-${t.priority}">${priorityText(t.priority)}</span><span class="badge badge-${t.status}">${statusText(t.status)}</span><span style="color:var(--text3);font-size:.8rem">${fmtDate(t.dueDate)}</span></div>`).join(''); }
@@ -531,12 +540,23 @@ function filterAndRender() {
   const keyword = ($('global-search').value || '').toLowerCase().trim();
   const assignee = $('kanban-assignee-filter').value;
   const priority = $('kanban-priority-filter').value;
+  const team = $('global-team-filter').value;
 
   let filtered = [...allTasks];
   if (keyword) filtered = filtered.filter(t => t.title.toLowerCase().includes(keyword) || (t.description || '').toLowerCase().includes(keyword));
   if (assignee) filtered = filtered.filter(t => t.assignees && t.assignees.includes(assignee));
   if (priority) filtered = filtered.filter(t => t.priority === priority);
+  if (team) {
+    filtered = filtered.filter(t => {
+      if (!t.assignees || t.assignees.length === 0) return false;
+      return t.assignees.some(assigneeId => {
+        const user = users.find(u => u.id === assigneeId);
+        return user && user.team === team;
+      });
+    });
+  }
 
+  renderDashboard(filtered);
   renderKanban(filtered);
   renderListView(filtered);
   renderGanttView(filtered);
@@ -544,6 +564,14 @@ function filterAndRender() {
   if (filtered.length < allTasks.length) {
     toast(`Hiển thị ${filtered.length}/${allTasks.length} công việc`, 'warning');
   }
+}
+
+function populateTeamFilter() {
+  const sel = $('global-team-filter');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Tất cả tổ</option>' + allTeams.map(t => `<option value="${t}">${t}</option>`).join('');
+  sel.value = current;
 }
 
 /* ===== Gantt Chart View ===== */
