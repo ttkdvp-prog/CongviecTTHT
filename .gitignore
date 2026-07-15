@@ -1,0 +1,21 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log
+
+# PowerShell scripts (local tools)
+*.ps1
+
+# Dashboard expert subfolder (not part of the app)
+dashboard-sheets-expert/
