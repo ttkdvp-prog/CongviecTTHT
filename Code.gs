@@ -235,11 +235,15 @@ function getUsers() {
     
     return usersData.map(row => {
       const name = String(row[1]);
-      const team = nameToTeam[name.trim().toLowerCase()] || "";
+      let team = String(row[2]).trim();
+      // Nếu cột C (Viết tắt/Tổ) trống hoặc quá ngắn, thử tra cứu từ sheet "To"
+      if (!team || team.length <= 4) {
+        team = nameToTeam[name.trim().toLowerCase()] || team;
+      }
       return {
         id: String(row[0]),
         name: name,
-        initials: String(row[2]),
+        initials: team, // Trả về thông tin Tổ
         team: team
       };
     });
@@ -275,23 +279,42 @@ function getTeamsData() {
   }
 }
 
-// Lấy danh sách tên các Tổ độc nhất từ sheet "To"
+// Lấy danh sách tên các Tổ độc nhất từ sheet "To" và sheet "Users"
 function getTeams() {
   try {
     const ss = getSs();
-    const toSheet = ss.getSheetByName("To");
-    if (!toSheet) return [];
-    
-    const lastRow = toSheet.getLastRow();
-    if (lastRow <= 1) return [];
-    
-    const data = toSheet.getRange(2, 1, lastRow - 1, 1).getValues();
     const teamsSet = new Set();
-    data.forEach(row => {
-      if (row[0]) {
-        teamsSet.add(String(row[0]).trim());
+    
+    // Đọc từ sheet "To"
+    const toSheet = ss.getSheetByName("To");
+    if (toSheet) {
+      const lastRow = toSheet.getLastRow();
+      if (lastRow > 1) {
+        const data = toSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        data.forEach(row => {
+          if (row[0]) teamsSet.add(String(row[0]).trim());
+        });
       }
-    });
+    }
+    
+    // Đọc từ sheet "Users" (Cột C: Tổ/Viết tắt)
+    const usersSheet = ss.getSheetByName("Users");
+    if (usersSheet) {
+      const lastRow = usersSheet.getLastRow();
+      if (lastRow > 1) {
+        const data = usersSheet.getRange(2, 3, lastRow - 1, 1).getValues();
+        data.forEach(row => {
+          if (row[0] && String(row[0]).trim().toLowerCase() !== "null") {
+            const val = String(row[0]).trim();
+            // Chỉ thêm nếu có vẻ là tên Tổ (ví dụ độ dài > 4 ký tự)
+            if (val.length > 4) {
+              teamsSet.add(val);
+            }
+          }
+        });
+      }
+    }
+    
     return Array.from(teamsSet);
   } catch(e) {
     Logger.log("Lỗi lấy danh sách Tổ: " + e.toString());

@@ -28,8 +28,16 @@ let allTeams = [];
 let currentGanttMonth = new Date().getMonth();
 let currentGanttYear = new Date().getFullYear();
 
-/* ===== DOM Refs ===== */
-const $ = id => document.getElementById(id);
+/* ===== Helpers ===== */
+function $(id) { return document.getElementById(id); }
+function getInitials(name) {
+  if (!name) return '?';
+  const cleanName = name.replace(/^[A-Z]+_/, '');
+  const parts = cleanName.split(' ').filter(p => p);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 const sidebar = $('sidebar');
 const loadingBar = $('loading-bar');
 
@@ -214,7 +222,7 @@ function renderKanban(tasks) {
     col.innerHTML = filtered.map(t => {
       const assigneeHtml = (t.assignees || []).map((a, i) => {
         const u = users.find(u => u.id === a);
-        return `<div class="mini-avatar" title="${u ? u.name : a}">${u ? u.initials : '?'}</div>`;
+        return `<div class="mini-avatar" title="${u ? u.name + ' (' + u.id + ')' : a}">${u ? getInitials(u.name) : '?'}</div>`;
       }).join('');
       const progress = t.progress || 0;
       return `<div class="task-card" draggable="true" data-id="${t.id}">
@@ -269,7 +277,7 @@ function renderListView(tasks) {
   const tbody = $('task-table-body');
   if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
-    const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? u.name : a; }).join(', ') || '—';
+    const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? `${u.name} (${u.id})` : a; }).join(', ') || '—';
     const p = t.progress || 0;
     return `<tr>
       <td><strong>${t.title}</strong></td>
@@ -288,13 +296,26 @@ function renderListView(tasks) {
 }
 
 /* ===== Users View ===== */
-function renderUsersView() {
+function renderUsersView(selectedTeam) {
   const grid = $('users-grid');
-  if (users.length === 0) { grid.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Chưa có người dùng nào</p></div>'; return; }
-  grid.innerHTML = users.map(u => `<div class="user-card glass">
-    <div class="user-avatar">${u.initials}</div>
+  if (!grid) return;
+  const team = selectedTeam !== undefined ? selectedTeam : $('global-team-filter').value;
+  
+  let filteredUsers = [...users];
+  if (team) {
+    filteredUsers = filteredUsers.filter(u => u.team === team);
+  }
+  
+  if (filteredUsers.length === 0) { 
+    grid.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Không có nhân viên nào thuộc tổ này</p></div>'; 
+    return; 
+  }
+  
+  grid.innerHTML = filteredUsers.map(u => `<div class="user-card glass">
+    <div class="user-avatar">${getInitials(u.name)}</div>
     <h4>${u.name}</h4>
-    <p>Viết tắt: ${u.initials}</p>
+    <p style="font-size: 0.85rem; color: var(--text2);">Mã NV: <strong>${u.id}</strong></p>
+    <p style="font-size: 0.85rem; color: var(--text3); margin-top: 4px;">${u.team || '—'}</p>
     <div class="user-card-actions">
       <button class="btn-secondary" onclick="editUser('${u.id}')"><i class="fas fa-pen"></i> Sửa</button>
       <button class="btn-danger" onclick="delUser('${u.id}')"><i class="fas fa-trash"></i> Xóa</button>
@@ -366,8 +387,16 @@ function populateAssigneePicker() {
 
 function populateFilterDropdowns() {
   const sel = $('kanban-assignee-filter');
+  if (!sel) return;
   const current = sel.value;
-  sel.innerHTML = '<option value="">Tất cả người phụ trách</option>' + users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+  const team = $('global-team-filter').value;
+  
+  let filteredUsers = [...users];
+  if (team) {
+    filteredUsers = filteredUsers.filter(u => u.team === team);
+  }
+  
+  sel.innerHTML = '<option value="">Tất cả người phụ trách</option>' + filteredUsers.map(u => `<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
   sel.value = current;
 }
 
@@ -560,6 +589,8 @@ function filterAndRender() {
   renderKanban(filtered);
   renderListView(filtered);
   renderGanttView(filtered);
+  renderUsersView(team);
+  populateFilterDropdowns();
 
   if (filtered.length < allTasks.length) {
     toast(`Hiển thị ${filtered.length}/${allTasks.length} công việc`, 'warning');
@@ -667,7 +698,7 @@ function renderGanttView(tasks) {
         task.assignees.forEach(assigneeId => {
           const user = users.find(u => u.id === assigneeId);
           if (user) {
-            assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name}">${user.initials}</div>`;
+            assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name} (${user.id})">${getInitials(user.name)}</div>`;
           }
         });
         assigneesHtml += '</div>';
