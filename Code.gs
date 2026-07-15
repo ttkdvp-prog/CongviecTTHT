@@ -1,11 +1,81 @@
-// Hàm doGet để mở ứng dụng web
-function doGet() {
+// Hàm doGet - xử lý cả web app và API requests
+function doGet(e) {
+  // Nếu có parameter action => trả về JSON (API mode)
+  if (e && e.parameter && e.parameter.action) {
+    return handleApiRequest(e.parameter);
+  }
+  
+  // Nếu không => trả về HTML (web app mode)
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('Quản Lý Công Việc')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .setFaviconUrl("https://cdn-icons-png.flaticon.com/512/2098/2098402.png");
+}
+
+// Hàm doPost - xử lý API write operations
+function doPost(e) {
+  try {
+    var params = JSON.parse(e.postData.contents);
+    return handleApiRequest(params);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: "Lỗi xử lý request: " + error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Router xử lý API requests
+function handleApiRequest(params) {
+  var result;
+  try {
+    switch(params.action) {
+      case 'getTasks':
+        result = getTasks();
+        break;
+      case 'getUsers':
+        result = getUsers();
+        break;
+      case 'addTask':
+        var taskData = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = addTask(taskData);
+        break;
+      case 'updateTask':
+        var taskData2 = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = updateTask(taskData2);
+        break;
+      case 'deleteTask':
+        result = deleteTask(params.taskId);
+        break;
+      case 'addUser':
+        var userData = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = addUser(userData);
+        break;
+      case 'updateUser':
+        var userData2 = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = updateUser(userData2);
+        break;
+      case 'deleteUser':
+        result = deleteUser(params.userId);
+        break;
+      case 'filterTasks':
+        var filterData = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = filterTasks(filterData);
+        break;
+      case 'checkOverdue':
+        result = { updated: checkOverdueTasks() };
+        break;
+      default:
+        result = { success: false, message: "Action không hợp lệ: " + params.action };
+    }
+  } catch (error) {
+    result = { success: false, message: "Lỗi server: " + error.toString() };
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // Hàm include để nhúng các file ngoài

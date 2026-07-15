@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Nhúng CSS -->
+    <?!= include('CSS'); ?>
+    <!-- Font Awesome từ CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <h1><i class="fas fa-tasks"></i> Quản Lý Công Việc</h1>
+      <div class="user-info">
+        <span id="user-name">Người Dùng</span>
+        <div class="avatar">ND</div>
+      </div>
+    </div>
+    
+    <!-- Panel điều khiển -->
+    <div class="control-panel">
+      <button id="add-task-btn" class="action-button"><i class="fas fa-plus"></i> Thêm Công Việc Mới</button>
+      <div class="filter-controls">
+        <div class="filter-dropdown custom-select">
+          <select id="assignee-filter">
+            <option value="">Người phụ trách</option>
+            <!-- Người dùng sẽ được thêm vào động từ script -->
+          </select>
+        </div>
+        <div class="filter-dropdown custom-date">
+          <input type="date" id="date-filter" placeholder="Ngày bắt đầu">
+        </div>
+        <div class="search-box">
+          <input type="text" id="search-input" placeholder="Tìm kiếm công việc...">
+          <button id="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+        <button id="refresh-btn" class="action-button refresh-button" title="Làm mới dữ liệu">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+      </div>
+      <div class="view-options">
+        <button class="view-btn active" data-view="kanban"><i class="fas fa-columns"></i> Kanban</button>
+        <button class="view-btn" data-view="list"><i class="fas fa-list"></i> Danh Sách</button>
+        <button class="view-btn" data-view="gantt"><i class="fas fa-chart-gantt"></i> Gantt</button>
+      </div>
+    </div>
+    
+    <!-- Nội dung chính -->
+    <div class="main-content">
+      <!-- Giao diện Kanban -->
+      <div id="kanban-view" class="kanban-board">
+        <!-- Cột Đang Thực Hiện -->
+        <div class="kanban-column" id="inprogress-column">
+          <div class="column-header">
+            <h3>Đang Thực Hiện</h3>
+            <span class="task-count">0</span>
+            <button class="add-column-task" data-status="inprogress"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="task-list" id="inprogress-tasks">
+            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Cột Hoàn Thành -->
+        <div class="kanban-column" id="done-column">
+          <div class="column-header">
+            <h3>Hoàn Thành</h3>
+            <span class="task-count">0</span>
+            <button class="add-column-task" data-status="done"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="task-list" id="done-tasks">
+            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Cột Quá Hạn (tự động, không kéo thả) -->
+        <div class="kanban-column no-drop" id="overdue-column">
+          <div class="column-header">
+            <h3>Quá Hạn</h3>
+            <span class="task-count">0</span>
+          </div>
+          <div class="task-list" id="overdue-tasks">
+            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
+          </div>
+        </div>
+        
+        <!-- Cột Đã Huỷ -->
+        <div class="kanban-column" id="cancelled-column">
+          <div class="column-header">
+            <h3>Đã Huỷ</h3>
+            <span class="task-count">0</span>
+            <button class="add-column-task" data-status="cancelled"><i class="fas fa-plus"></i></button>
+          </div>
+          <div class="task-list" id="cancelled-tasks">
+            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
+          </div>
+        </div>
+      </div>
+      
+      <!-- Giao diện Danh sách -->
+      <div id="list-view" class="list-view" style="display: none;">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tiêu đề</th>
+              <th>Mô tả</th>
+              <th>Ưu tiên</th>
+              <th>Người phụ trách</th>
+              <th>Ngày bắt đầu</th>
+              <th>Hạn hoàn thành</th>
+              <th>Trạng thái</th>
+              <th>Tiến độ</th>
+              <th>Tệp đính kèm</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="task-table-body">
+            <!-- Hàng sẽ được thêm ở đây bằng JavaScript -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Giao diện Gantt -->
+      <div id="gantt-view" class="gantt-view" style="display: none;">
+        <div class="gantt-container">
+          <div class="gantt-side">
+            <div class="gantt-side-header">
+              <div class="gantt-task-header">Công việc</div>
+              <div class="gantt-status-header">Trạng thái</div>
+            </div>
+            <div class="gantt-side-body">
+              <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
+            </div>
+          </div>
+          
+          <div class="gantt-timeline">
+            <div class="gantt-timeline-header">
+              <div class="gantt-month-controls">
+                <button id="prev-month-btn" class="month-nav-btn"><i class="fas fa-chevron-left"></i></button>
+                <div class="gantt-month">Tháng 4, 2025</div>
+                <button id="next-month-btn" class="month-nav-btn"><i class="fas fa-chevron-right"></i></button>
+              </div>
+              <div class="gantt-days">
+                <!-- Ngày sẽ được thêm ở đây bằng JavaScript -->
+              </div>
+            </div>
+            
+            <div class="gantt-timeline-body">
+              <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Modal thêm/sửa công việc -->
+    <div id="task-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">Thêm Công Việc Mới</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="task-form">
+            <input type="hidden" id="task-id">
+            <div class="form-group">
+              <label for="task-title-input">Tiêu đề:</label>
+              <input type="text" id="task-title-input" required>
+            </div>
+            <div class="form-group">
+              <label for="task-desc-input">Mô tả:</label>
+              <textarea id="task-desc-input" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="task-priority">Mức độ ưu tiên:</label>
+                <select id="task-priority">
+                  <option value="low">Thấp</option>
+                  <option value="medium">Trung bình</option>
+                  <option value="high">Cao</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="task-status">Trạng thái:</label>
+                <select id="task-status">
+                  <option value="inprogress">Đang Thực Hiện</option>
+                  <option value="done">Hoàn Thành</option>
+                  <option value="cancelled">Đã Huỷ</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="task-start-date">Ngày bắt đầu:</label>
+                <input type="date" id="task-start-date">
+              </div>
+              <div class="form-group">
+                <label for="task-due-date">Hạn hoàn thành:</label>
+                <input type="date" id="task-due-date">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Người phụ trách:</label>
+              <div class="assignee-selector" id="assignee-selector">
+                <!-- Người dùng sẽ được thêm ở đây bằng JavaScript -->
+              </div>
+            </div>
+              <div class="form-group">
+                <label>Tệp đính kèm:</label>
+                <div class="attachment-inputs">
+                  <div class="attachment-input-row">
+                    <input type="text" class="attachment-url" placeholder="Nhập URL" style="display: block; width: 100%;">
+                    <button type="button" class="add-attachment-btn"><i class="fas fa-plus"></i></button>
+                  </div>
+                </div>
+                <div class="attachment-preview">
+                  <!-- Các tệp đã thêm sẽ hiển thị ở đây -->
+                </div>
+              </div>
+            <div class="form-group">
+              <label>Công việc con:</label>
+              <div class="subtasks-container">
+                <div class="subtask-input-row">
+                  <input type="text" class="subtask-title-input" placeholder="Nhập tên công việc con">
+                  <button type="button" class="add-subtask-btn"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="subtasks-list">
+                  <!-- Danh sách công việc con sẽ hiển thị ở đây -->
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" id="cancel-task-btn">Hủy</button>
+              <button type="submit" id="save-task-btn">Lưu</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal quản lý người dùng với bố cục đã cập nhật -->
+    <div id="user-management-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="user-modal-title">Quản lý Người dùng</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <!-- Form nhập liệu đã được chuyển lên trên -->
+          <div id="user-form-container" style="display: none; margin-bottom: 20px;">
+            <h3 id="user-form-title">Thêm người dùng mới</h3>
+            <form id="user-form">
+              <input type="hidden" id="user-id-input">
+              <div class="form-group">
+                <label for="user-name-input">Tên người dùng:</label>
+                <input type="text" id="user-name-input" required>
+              </div>
+              <div class="form-group">
+                <label for="user-initials-input">Chữ viết tắt:</label>
+                <input type="text" id="user-initials-input" required maxlength="3">
+              </div>
+              <div class="form-actions">
+                <button type="button" id="cancel-user-btn">Hủy</button>
+                <button type="submit" id="save-user-btn">Lưu</button>
+              </div>
+            </form>
+          </div>
+          
+          <!-- Tiêu đề với nút thêm người dùng ở bên phải -->
+          <div class="user-list-header">
+            <h3>Danh sách người dùng</h3>
+            <button id="add-user-btn" class="action-button"><i class="fas fa-plus"></i> Thêm Người dùng</button>
+          </div>
+          
+          <div class="user-list-container">
+            <div class="user-list">
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Tên</th>
+                    <th>Chữ viết tắt</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="user-table-body">
+                  <!-- Danh sách người dùng sẽ được thêm vào đây bằng JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Đang tải...</p>
+    </div>
+    
+    <!-- Nhúng JavaScript -->
+    <?!= include('JavaScript'); ?>
+  </body>
+</html>

@@ -1,308 +1,324 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <base target="_top">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Nhúng CSS -->
-    <?!= include('CSS'); ?>
-    <!-- Font Awesome từ CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  </head>
-  <body>
-    <!-- Header -->
-    <div class="header">
-      <h1><i class="fas fa-tasks"></i> Quản Lý Công Việc</h1>
-      <div class="user-info">
-        <span id="user-name">Người Dùng</span>
-        <div class="avatar">ND</div>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Công Việc - Trung tâm Hạ tầng</title>
+  <meta name="description" content="Ứng dụng quản lý công việc hiện đại cho Trung tâm Hạ tầng VNPT">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2098/2098402.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-gradient"></div>
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <i class="fas fa-layer-group"></i>
       </div>
-    </div>
-    
-    <!-- Panel điều khiển -->
-    <div class="control-panel">
-      <button id="add-task-btn" class="action-button"><i class="fas fa-plus"></i> Thêm Công Việc Mới</button>
-      <div class="filter-controls">
-        <div class="filter-dropdown custom-select">
-          <select id="assignee-filter">
-            <option value="">Người phụ trách</option>
-            <!-- Người dùng sẽ được thêm vào động từ script -->
-          </select>
-        </div>
-        <div class="filter-dropdown custom-date">
-          <input type="date" id="date-filter" placeholder="Ngày bắt đầu">
-        </div>
-        <div class="search-box">
-          <input type="text" id="search-input" placeholder="Tìm kiếm công việc...">
-          <button id="search-btn"><i class="fas fa-search"></i></button>
-        </div>
-        <button id="refresh-btn" class="action-button refresh-button" title="Làm mới dữ liệu">
-          <i class="fas fa-sync-alt"></i>
-        </button>
-      </div>
-      <div class="view-options">
-        <button class="view-btn active" data-view="kanban"><i class="fas fa-columns"></i> Kanban</button>
-        <button class="view-btn" data-view="list"><i class="fas fa-list"></i> Danh Sách</button>
-        <button class="view-btn" data-view="gantt"><i class="fas fa-chart-gantt"></i> Gantt</button>
-      </div>
-    </div>
-    
-    <!-- Nội dung chính -->
-    <div class="main-content">
-      <!-- Giao diện Kanban -->
-      <div id="kanban-view" class="kanban-board">
-        <!-- Cột Đang Thực Hiện -->
-        <div class="kanban-column" id="inprogress-column">
-          <div class="column-header">
-            <h3>Đang Thực Hiện</h3>
-            <span class="task-count">0</span>
-            <button class="add-column-task" data-status="inprogress"><i class="fas fa-plus"></i></button>
-          </div>
-          <div class="task-list" id="inprogress-tasks">
-            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
-          </div>
-        </div>
-        
-        <!-- Cột Hoàn Thành -->
-        <div class="kanban-column" id="done-column">
-          <div class="column-header">
-            <h3>Hoàn Thành</h3>
-            <span class="task-count">0</span>
-            <button class="add-column-task" data-status="done"><i class="fas fa-plus"></i></button>
-          </div>
-          <div class="task-list" id="done-tasks">
-            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
-          </div>
-        </div>
-        
-        <!-- Cột Quá Hạn (tự động, không kéo thả) -->
-        <div class="kanban-column no-drop" id="overdue-column">
-          <div class="column-header">
-            <h3>Quá Hạn</h3>
-            <span class="task-count">0</span>
-          </div>
-          <div class="task-list" id="overdue-tasks">
-            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
-          </div>
-        </div>
-        
-        <!-- Cột Đã Huỷ -->
-        <div class="kanban-column" id="cancelled-column">
-          <div class="column-header">
-            <h3>Đã Huỷ</h3>
-            <span class="task-count">0</span>
-            <button class="add-column-task" data-status="cancelled"><i class="fas fa-plus"></i></button>
-          </div>
-          <div class="task-list" id="cancelled-tasks">
-            <!-- Task sẽ được thêm ở đây bằng JavaScript -->
-          </div>
-        </div>
-      </div>
-      
-      <!-- Giao diện Danh sách -->
-      <div id="list-view" class="list-view" style="display: none;">
-        <table class="task-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tiêu đề</th>
-              <th>Mô tả</th>
-              <th>Ưu tiên</th>
-              <th>Người phụ trách</th>
-              <th>Ngày bắt đầu</th>
-              <th>Hạn hoàn thành</th>
-              <th>Trạng thái</th>
-              <th>Tiến độ</th>
-              <th>Tệp đính kèm</th>
-              <th>Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="task-table-body">
-            <!-- Hàng sẽ được thêm ở đây bằng JavaScript -->
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Giao diện Gantt -->
-      <div id="gantt-view" class="gantt-view" style="display: none;">
-        <div class="gantt-container">
-          <div class="gantt-side">
-            <div class="gantt-side-header">
-              <div class="gantt-task-header">Công việc</div>
-              <div class="gantt-status-header">Trạng thái</div>
-            </div>
-            <div class="gantt-side-body">
-              <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
-            </div>
-          </div>
-          
-          <div class="gantt-timeline">
-            <div class="gantt-timeline-header">
-              <div class="gantt-month-controls">
-                <button id="prev-month-btn" class="month-nav-btn"><i class="fas fa-chevron-left"></i></button>
-                <div class="gantt-month">Tháng 4, 2025</div>
-                <button id="next-month-btn" class="month-nav-btn"><i class="fas fa-chevron-right"></i></button>
-              </div>
-              <div class="gantt-days">
-                <!-- Ngày sẽ được thêm ở đây bằng JavaScript -->
-              </div>
-            </div>
-            
-            <div class="gantt-timeline-body">
-              <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Modal thêm/sửa công việc -->
-    <div id="task-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="modal-title">Thêm Công Việc Mới</h2>
-          <span class="close-modal">&times;</span>
-        </div>
-        <div class="modal-body">
-          <form id="task-form">
-            <input type="hidden" id="task-id">
-            <div class="form-group">
-              <label for="task-title-input">Tiêu đề:</label>
-              <input type="text" id="task-title-input" required>
-            </div>
-            <div class="form-group">
-              <label for="task-desc-input">Mô tả:</label>
-              <textarea id="task-desc-input" rows="3"></textarea>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="task-priority">Mức độ ưu tiên:</label>
-                <select id="task-priority">
-                  <option value="low">Thấp</option>
-                  <option value="medium">Trung bình</option>
-                  <option value="high">Cao</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="task-status">Trạng thái:</label>
-                <select id="task-status">
-                  <option value="inprogress">Đang Thực Hiện</option>
-                  <option value="done">Hoàn Thành</option>
-                  <option value="cancelled">Đã Huỷ</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="task-start-date">Ngày bắt đầu:</label>
-                <input type="date" id="task-start-date">
-              </div>
-              <div class="form-group">
-                <label for="task-due-date">Hạn hoàn thành:</label>
-                <input type="date" id="task-due-date">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Người phụ trách:</label>
-              <div class="assignee-selector" id="assignee-selector">
-                <!-- Người dùng sẽ được thêm ở đây bằng JavaScript -->
-              </div>
-            </div>
-              <div class="form-group">
-                <label>Tệp đính kèm:</label>
-                <div class="attachment-inputs">
-                  <div class="attachment-input-row">
-                    <input type="text" class="attachment-url" placeholder="Nhập URL" style="display: block; width: 100%;">
-                    <button type="button" class="add-attachment-btn"><i class="fas fa-plus"></i></button>
-                  </div>
-                </div>
-                <div class="attachment-preview">
-                  <!-- Các tệp đã thêm sẽ hiển thị ở đây -->
-                </div>
-              </div>
-            <div class="form-group">
-              <label>Công việc con:</label>
-              <div class="subtasks-container">
-                <div class="subtask-input-row">
-                  <input type="text" class="subtask-title-input" placeholder="Nhập tên công việc con">
-                  <button type="button" class="add-subtask-btn"><i class="fas fa-plus"></i></button>
-                </div>
-                <div class="subtasks-list">
-                  <!-- Danh sách công việc con sẽ hiển thị ở đây -->
-                </div>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button type="button" id="cancel-task-btn">Hủy</button>
-              <button type="submit" id="save-task-btn">Lưu</button>
-            </div>
-          </form>
-        </div>
+      <div class="brand-text">
+        <span class="brand-name">TTHT Tasks</span>
+        <span class="brand-sub">Quản lý công việc</span>
       </div>
     </div>
 
-    <!-- Modal quản lý người dùng với bố cục đã cập nhật -->
-    <div id="user-management-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="user-modal-title">Quản lý Người dùng</h2>
-          <span class="close-modal">&times;</span>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-link active" data-view="dashboard" id="nav-dashboard">
+        <i class="fas fa-chart-pie"></i>
+        <span>Tổng quan</span>
+      </a>
+      <a href="#" class="nav-link" data-view="kanban" id="nav-kanban">
+        <i class="fas fa-columns"></i>
+        <span>Bảng Kanban</span>
+      </a>
+      <a href="#" class="nav-link" data-view="list" id="nav-list">
+        <i class="fas fa-table-list"></i>
+        <span>Danh sách</span>
+      </a>
+      <a href="#" class="nav-link" data-view="users" id="nav-users">
+        <i class="fas fa-users-gear"></i>
+        <span>Người dùng</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-info">
+        <i class="fas fa-circle-info"></i>
+        <span>VNPT - Hạ tầng</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-wrapper" id="main-wrapper">
+    <!-- Top Header -->
+    <header class="top-header glass">
+      <div class="header-left">
+        <button class="btn-icon sidebar-toggle" id="sidebar-toggle" title="Thu gọn menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="page-title" id="page-title">Tổng quan</h1>
+      </div>
+      <div class="header-right">
+        <div class="search-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" id="global-search" placeholder="Tìm kiếm công việc...">
         </div>
-        <div class="modal-body">
-          <!-- Form nhập liệu đã được chuyển lên trên -->
-          <div id="user-form-container" style="display: none; margin-bottom: 20px;">
-            <h3 id="user-form-title">Thêm người dùng mới</h3>
-            <form id="user-form">
-              <input type="hidden" id="user-id-input">
-              <div class="form-group">
-                <label for="user-name-input">Tên người dùng:</label>
-                <input type="text" id="user-name-input" required>
-              </div>
-              <div class="form-group">
-                <label for="user-initials-input">Chữ viết tắt:</label>
-                <input type="text" id="user-initials-input" required maxlength="3">
-              </div>
-              <div class="form-actions">
-                <button type="button" id="cancel-user-btn">Hủy</button>
-                <button type="submit" id="save-user-btn">Lưu</button>
-              </div>
-            </form>
+        <button class="btn-icon" id="refresh-btn" title="Làm mới dữ liệu">
+          <i class="fas fa-arrows-rotate"></i>
+        </button>
+        <button class="btn-primary" id="add-task-btn">
+          <i class="fas fa-plus"></i>
+          <span>Thêm mới</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== DASHBOARD VIEW ==================== -->
+    <section class="view active" id="dashboard-view">
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card glass" id="stat-total">
+          <div class="stat-icon" style="--accent: #0ea5e9"><i class="fas fa-clipboard-list"></i></div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-total-val">0</span>
+            <span class="stat-label">Tổng công việc</span>
           </div>
-          
-          <!-- Tiêu đề với nút thêm người dùng ở bên phải -->
-          <div class="user-list-header">
-            <h3>Danh sách người dùng</h3>
-            <button id="add-user-btn" class="action-button"><i class="fas fa-plus"></i> Thêm Người dùng</button>
+        </div>
+        <div class="stat-card glass" id="stat-progress">
+          <div class="stat-icon" style="--accent: #f59e0b"><i class="fas fa-spinner"></i></div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-progress-val">0</span>
+            <span class="stat-label">Đang thực hiện</span>
           </div>
-          
-          <div class="user-list-container">
-            <div class="user-list">
-              <table class="user-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Tên</th>
-                    <th>Chữ viết tắt</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody id="user-table-body">
-                  <!-- Danh sách người dùng sẽ được thêm vào đây bằng JavaScript -->
-                </tbody>
-              </table>
-            </div>
+        </div>
+        <div class="stat-card glass" id="stat-done">
+          <div class="stat-icon" style="--accent: #00c48c"><i class="fas fa-circle-check"></i></div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-done-val">0</span>
+            <span class="stat-label">Hoàn thành</span>
+          </div>
+        </div>
+        <div class="stat-card glass" id="stat-overdue">
+          <div class="stat-icon" style="--accent: #f43f5e"><i class="fas fa-clock"></i></div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-overdue-val">0</span>
+            <span class="stat-label">Quá hạn</span>
           </div>
         </div>
       </div>
+
+      <!-- Charts Row -->
+      <div class="dashboard-grid">
+        <div class="dash-card glass">
+          <h3 class="card-title"><i class="fas fa-chart-pie"></i> Phân bổ trạng thái</h3>
+          <div class="chart-container" id="status-chart"></div>
+        </div>
+        <div class="dash-card glass">
+          <h3 class="card-title"><i class="fas fa-fire"></i> Công việc ưu tiên cao</h3>
+          <div class="priority-list" id="high-priority-list">
+            <div class="empty-state-sm"><i class="fas fa-check-double"></i> Không có công việc ưu tiên cao</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Tasks -->
+      <div class="dash-card glass full-width">
+        <h3 class="card-title"><i class="fas fa-clock-rotate-left"></i> Công việc gần đây</h3>
+        <div class="recent-tasks" id="recent-tasks">
+          <div class="empty-state-sm"><i class="fas fa-inbox"></i> Chưa có công việc nào</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== KANBAN VIEW ==================== -->
+    <section class="view" id="kanban-view">
+      <div class="kanban-filters glass">
+        <div class="filter-group">
+          <select id="kanban-assignee-filter" class="filter-select">
+            <option value="">Tất cả người phụ trách</option>
+          </select>
+          <select id="kanban-priority-filter" class="filter-select">
+            <option value="">Tất cả mức ưu tiên</option>
+            <option value="high">Cao</option>
+            <option value="medium">Trung bình</option>
+            <option value="low">Thấp</option>
+          </select>
+        </div>
+      </div>
+      <div class="kanban-board" id="kanban-board">
+        <div class="kanban-column" data-status="inprogress">
+          <div class="column-header">
+            <div class="col-title"><span class="col-dot" style="--dot: #0ea5e9"></span> Đang thực hiện</div>
+            <span class="col-count" id="count-inprogress">0</span>
+          </div>
+          <div class="column-body" id="col-inprogress"></div>
+        </div>
+        <div class="kanban-column" data-status="done">
+          <div class="column-header">
+            <div class="col-title"><span class="col-dot" style="--dot: #00c48c"></span> Hoàn thành</div>
+            <span class="col-count" id="count-done">0</span>
+          </div>
+          <div class="column-body" id="col-done"></div>
+        </div>
+        <div class="kanban-column" data-status="overdue">
+          <div class="column-header">
+            <div class="col-title"><span class="col-dot" style="--dot: #f43f5e"></span> Quá hạn</div>
+            <span class="col-count" id="count-overdue">0</span>
+          </div>
+          <div class="column-body no-drop" id="col-overdue"></div>
+        </div>
+        <div class="kanban-column" data-status="cancelled">
+          <div class="column-header">
+            <div class="col-title"><span class="col-dot" style="--dot: #64748b"></span> Đã huỷ</div>
+            <span class="col-count" id="count-cancelled">0</span>
+          </div>
+          <div class="column-body" id="col-cancelled"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== LIST VIEW ==================== -->
+    <section class="view" id="list-view">
+      <div class="list-container glass">
+        <table class="data-table" id="task-table">
+          <thead>
+            <tr>
+              <th>Tiêu đề</th>
+              <th>Ưu tiên</th>
+              <th>Trạng thái</th>
+              <th>Người phụ trách</th>
+              <th>Bắt đầu</th>
+              <th>Hạn chót</th>
+              <th>Tiến độ</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="task-table-body">
+            <tr><td colspan="8" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== USERS VIEW ==================== -->
+    <section class="view" id="users-view">
+      <div class="users-header">
+        <button class="btn-primary" id="add-user-btn"><i class="fas fa-user-plus"></i> Thêm người dùng</button>
+      </div>
+      <div class="users-grid" id="users-grid">
+        <div class="empty-state"><i class="fas fa-users"></i><p>Đang tải danh sách người dùng...</p></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== TASK MODAL ==================== -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal glass-modal">
+      <div class="modal-header">
+        <h2 id="modal-title"><i class="fas fa-plus-circle"></i> Thêm công việc mới</h2>
+        <button class="btn-icon modal-close" data-close="task-modal"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="task-form">
+          <input type="hidden" id="task-id">
+          <div class="form-group">
+            <label for="task-title">Tiêu đề <span class="required">*</span></label>
+            <input type="text" id="task-title" placeholder="Nhập tiêu đề công việc..." required>
+          </div>
+          <div class="form-group">
+            <label for="task-desc">Mô tả</label>
+            <textarea id="task-desc" rows="3" placeholder="Mô tả chi tiết công việc..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-priority">Mức ưu tiên</label>
+              <select id="task-priority">
+                <option value="low">Thấp</option>
+                <option value="medium" selected>Trung bình</option>
+                <option value="high">Cao</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="task-status">Trạng thái</label>
+              <select id="task-status">
+                <option value="inprogress">Đang thực hiện</option>
+                <option value="done">Hoàn thành</option>
+                <option value="cancelled">Đã huỷ</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="task-start">Ngày bắt đầu</label>
+              <input type="date" id="task-start">
+            </div>
+            <div class="form-group">
+              <label for="task-due">Hạn hoàn thành</label>
+              <input type="date" id="task-due">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Người phụ trách</label>
+            <div class="assignee-picker" id="assignee-picker"></div>
+          </div>
+          <div class="form-group">
+            <label>Công việc con</label>
+            <div class="subtask-input-row">
+              <input type="text" id="subtask-input" placeholder="Thêm công việc con...">
+              <button type="button" class="btn-icon btn-add-subtask" id="add-subtask-btn"><i class="fas fa-plus"></i></button>
+            </div>
+            <div class="subtask-list" id="subtask-list"></div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" data-close="task-modal">Huỷ bỏ</button>
+            <button type="submit" class="btn-primary" id="save-task-btn"><i class="fas fa-save"></i> Lưu lại</button>
+          </div>
+        </form>
+      </div>
     </div>
-    
-    <!-- Loading overlay -->
-    <div id="loading-overlay" class="loading-overlay">
-      <div class="spinner"></div>
-      <p>Đang tải...</p>
+  </div>
+
+  <!-- ==================== USER MODAL ==================== -->
+  <div class="modal-overlay" id="user-modal">
+    <div class="modal glass-modal modal-sm">
+      <div class="modal-header">
+        <h2 id="user-modal-title"><i class="fas fa-user-plus"></i> Thêm người dùng</h2>
+        <button class="btn-icon modal-close" data-close="user-modal"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="user-form">
+          <input type="hidden" id="user-id">
+          <div class="form-group">
+            <label for="user-name">Họ và tên <span class="required">*</span></label>
+            <input type="text" id="user-name" placeholder="Nhập họ và tên..." required>
+          </div>
+          <div class="form-group">
+            <label for="user-initials">Viết tắt <span class="required">*</span></label>
+            <input type="text" id="user-initials" placeholder="VD: NVA" maxlength="3" required>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" data-close="user-modal">Huỷ bỏ</button>
+            <button type="submit" class="btn-primary" id="save-user-btn"><i class="fas fa-save"></i> Lưu</button>
+          </div>
+        </form>
+      </div>
     </div>
-    
-    <!-- Nhúng JavaScript -->
-    <?!= include('JavaScript'); ?>
-  </body>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Loading -->
+  <div class="loading-bar" id="loading-bar"></div>
+
+  <script src="app.js"></script>
+</body>
 </html>
