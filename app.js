@@ -38,6 +38,40 @@ function getInitials(name) {
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
+function getTeamAbbr(teamName) {
+  if (!teamName) return '';
+  const name = teamName.trim();
+  if (name.includes('Tổng hợp')) return 'TH';
+  if (name.includes('Hạ tầng Hòa Bình')) return 'HBH';
+  if (name.includes('Hạ tầng Lương Sơn')) return 'LSN';
+  if (name.includes('Hạ tầng Phúc Yên')) return 'PYN';
+  if (name.includes('Hạ tầng Tam Đảo')) return 'TDO';
+  if (name.includes('Hạ tầng Tân Lạc')) return 'TLC';
+  if (name.includes('Hạ tầng Thanh Ba')) return 'TBA';
+  if (name.includes('Hạ tầng Thanh Sơn')) return 'TSN';
+  if (name.includes('Hạ tầng Việt Trì')) return 'VTI';
+  if (name.includes('Hạ tầng Vĩnh Yên')) return 'VYN';
+  if (name.includes('Hỗ trợ Khách hàng Vip')) {
+    if (name.includes('Hoà Bình') || name.includes('Hòa Bình')) return 'VIPHBN';
+    if (name.includes('Phú Thọ')) return 'VIPPTO';
+    if (name.includes('Vĩnh Phúc')) return 'VIPVPC';
+    return 'VIP';
+  }
+  if (name.includes('Khai thác Hệ thống')) return 'KTHT';
+  
+  const clean = name.replace(/^Tổ\s+/i, '');
+  return clean.split(' ').map(w => w[0]).join('').toUpperCase();
+}
+function getTaskTeamsAbbr(t) {
+  if (!t.assignees || t.assignees.length === 0) return '';
+  const abbrs = t.assignees.map(assigneeId => {
+    const user = users.find(u => u.id === assigneeId);
+    return user ? getTeamAbbr(user.team) : '';
+  }).filter(a => a);
+  const uniqueAbbrs = [...new Set(abbrs)];
+  if (uniqueAbbrs.length === 0) return '';
+  return `<span class="badge badge-team" style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);color:var(--text2);margin-left:6px;font-size:0.75rem">${uniqueAbbrs.join(', ')}</span>`;
+}
 const sidebar = $('sidebar');
 const loadingBar = $('loading-bar');
 
@@ -202,13 +236,13 @@ function renderDashboard(tasks) {
   const highPri = list.filter(t => t.priority === 'high' && t.status !== 'done' && t.status !== 'cancelled').slice(0, 5);
   const hpList = $('high-priority-list');
   if (highPri.length === 0) { hpList.innerHTML = '<div class="empty-state-sm"><i class="fas fa-check-double"></i> Không có công việc ưu tiên cao</div>'; }
-  else { hpList.innerHTML = highPri.map(t => `<div class="priority-item"><span class="task-name-col">${t.title}</span><span class="badge badge-${t.status}">${statusText(t.status)}</span></div>`).join(''); }
+  else { hpList.innerHTML = highPri.map(t => `<div class="priority-item"><span class="task-name-col">${t.title}${getTaskTeamsAbbr(t)}</span><span class="badge badge-${t.status}">${statusText(t.status)}</span></div>`).join(''); }
 
   // Recent tasks
   const recent = [...list].slice(0, 6);
   const recList = $('recent-tasks');
   if (recent.length === 0) { recList.innerHTML = '<div class="empty-state-sm"><i class="fas fa-inbox"></i> Chưa có công việc nào</div>'; }
-  else { recList.innerHTML = recent.map(t => `<div class="recent-item"><span class="task-name-col">${t.title}</span><span class="badge badge-${t.priority}">${priorityText(t.priority)}</span><span class="badge badge-${t.status}">${statusText(t.status)}</span><span style="color:var(--text3);font-size:.8rem">${fmtDate(t.dueDate)}</span></div>`).join(''); }
+  else { recList.innerHTML = recent.map(t => `<div class="recent-item"><span class="task-name-col">${t.title}${getTaskTeamsAbbr(t)}</span><span class="badge badge-${t.priority}">${priorityText(t.priority)}</span><span class="badge badge-${t.status}">${statusText(t.status)}</span><span style="color:var(--text3);font-size:.8rem">${fmtDate(t.dueDate)}</span></div>`).join(''); }
 }
 
 /* ===== Kanban ===== */
@@ -230,7 +264,10 @@ function renderKanban(tasks) {
           <button title="Sửa" onclick="editTask('${t.id}')"><i class="fas fa-pen"></i></button>
           <button class="btn-del" title="Xóa" onclick="delTask('${t.id}')"><i class="fas fa-trash"></i></button>
         </div>
-        <span class="badge badge-${t.priority}" style="margin-bottom:8px">${priorityText(t.priority)}</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+          <span class="badge badge-${t.priority}">${priorityText(t.priority)}</span>
+          ${getTaskTeamsAbbr(t)}
+        </div>
         <div class="task-card-title">${t.title}</div>
         ${t.description ? `<div class="task-card-desc">${t.description}</div>` : ''}
         <div class="task-card-meta">
@@ -277,7 +314,7 @@ function renderListView(tasks) {
   const tbody = $('task-table-body');
   if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
-    const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? `${u.name} (${u.id})` : a; }).join(', ') || '—';
+    const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
     const p = t.progress || 0;
     return `<tr>
       <td><strong>${t.title}</strong></td>
@@ -601,7 +638,10 @@ function populateTeamFilter() {
   const sel = $('global-team-filter');
   if (!sel) return;
   const current = sel.value;
-  sel.innerHTML = '<option value="">Tất cả tổ</option>' + allTeams.map(t => `<option value="${t}">${t}</option>`).join('');
+  sel.innerHTML = '<option value="">Tất cả tổ</option>' + allTeams.map(t => {
+    const abbr = getTeamAbbr(t);
+    return `<option value="${t}">${t}${abbr ? ' (' + abbr + ')' : ''}</option>`;
+  }).join('');
   sel.value = current;
 }
 
