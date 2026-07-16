@@ -93,6 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
   $('add-subtask-btn').addEventListener('click', addSubtaskInput);
   $('subtask-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskInput(); } });
   $('global-team-filter').addEventListener('change', filterAndRender);
+  $('modal-team-filter').addEventListener('change', () => populateAssigneePicker());
+  let modalSearchTimer;
+  $('modal-assignee-search').addEventListener('input', () => {
+    clearTimeout(modalSearchTimer);
+    modalSearchTimer = setTimeout(() => populateAssigneePicker(), 200);
+  });
   $('prev-month-btn').addEventListener('click', () => navigateGanttMonth(-1));
   $('next-month-btn').addEventListener('click', () => navigateGanttMonth(1));
   initGanttScrollSync();
@@ -170,6 +176,7 @@ function renderAll() {
   populateAssigneePicker();
   populateFilterDropdowns();
   populateTeamFilter();
+  populateModalTeamFilter();
 }
 
 /* ===== Helpers ===== */
@@ -379,6 +386,8 @@ function openTaskModal(task) {
   $('task-form').reset();
   $('task-id').value = '';
   $('subtask-list').innerHTML = '';
+  $('modal-team-filter').value = '';
+  $('modal-assignee-search').value = '';
   populateAssigneePicker();
 
   if (isEdit) {
@@ -418,8 +427,78 @@ function openUserModal(user) {
 function populateAssigneePicker() {
   const picker = $('assignee-picker');
   if (!picker) return;
-  picker.innerHTML = users.map(u => `<div class="assignee-chip" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}</div>`).join('');
-  if (users.length === 0) picker.innerHTML = '<span style="color:var(--text3);font-size:.85rem">Chưa có người dùng</span>';
+
+  // Remember currently selected assignees
+  const selectedIds = [...document.querySelectorAll('.assignee-chip.selected')].map(c => c.dataset.id);
+
+  const teamFilter = ($('modal-team-filter') ? $('modal-team-filter').value : '');
+  const searchFilter = ($('modal-assignee-search') ? $('modal-assignee-search').value : '').toLowerCase().trim();
+
+  // Always show already-selected users regardless of filter
+  const alreadySelected = users.filter(u => selectedIds.includes(u.id));
+
+  // If no team is selected and no search text, show prompt + already selected
+  if (!teamFilter && !searchFilter) {
+    let html = '';
+    if (alreadySelected.length > 0) {
+      html += alreadySelected.map(u => {
+        const teamAbbr = getTeamAbbr(u.team);
+        const teamBadge = teamAbbr ? ` <span class="chip-team-badge">${teamAbbr}</span>` : '';
+        return `<div class="assignee-chip selected" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}${teamBadge}</div>`;
+      }).join('');
+      html += `<div class="assignee-picker-divider"><span>Chọn tổ để thêm người</span></div>`;
+    }
+    html += '<div class="assignee-picker-prompt"><i class="fas fa-users-rectangle"></i> Vui lòng chọn Tổ để hiển thị danh sách người phụ trách</div>';
+    picker.innerHTML = html;
+    return;
+  }
+
+  let filteredUsers = [...users];
+  if (teamFilter) {
+    filteredUsers = filteredUsers.filter(u => u.team === teamFilter);
+  }
+  if (searchFilter) {
+    filteredUsers = filteredUsers.filter(u => u.name.toLowerCase().includes(searchFilter) || (u.id && u.id.toLowerCase().includes(searchFilter)));
+  }
+
+  // Build chips: show filtered users + any previously selected users not in filtered list
+  const filteredIds = new Set(filteredUsers.map(u => u.id));
+  const extraSelected = users.filter(u => selectedIds.includes(u.id) && !filteredIds.has(u.id));
+
+  let html = '';
+  if (filteredUsers.length > 0 || extraSelected.length > 0) {
+    // Show filtered users grouped by team if a team is selected
+    html += filteredUsers.map(u => {
+      const isSelected = selectedIds.includes(u.id) ? ' selected' : '';
+      const teamAbbr = getTeamAbbr(u.team);
+      const teamBadge = teamAbbr && !teamFilter ? ` <span class="chip-team-badge">${teamAbbr}</span>` : '';
+      return `<div class="assignee-chip${isSelected}" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}${teamBadge}</div>`;
+    }).join('');
+
+    // Append already-selected users from other teams (dimmed indicator)
+    if (extraSelected.length > 0) {
+      html += `<div class="assignee-picker-divider"><span>Đã chọn từ tổ khác</span></div>`;
+      html += extraSelected.map(u => {
+        const teamAbbr = getTeamAbbr(u.team);
+        const teamBadge = teamAbbr ? ` <span class="chip-team-badge">${teamAbbr}</span>` : '';
+        return `<div class="assignee-chip selected other-team" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}${teamBadge}</div>`;
+      }).join('');
+    }
+  } else {
+    html = '<span style="color:var(--text3);font-size:.85rem">Không tìm thấy nhân viên</span>';
+  }
+  picker.innerHTML = html;
+}
+
+function populateModalTeamFilter() {
+  const sel = $('modal-team-filter');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Tất cả tổ</option>' + allTeams.map(t => {
+    const abbr = getTeamAbbr(t);
+    return `<option value="${t}">${t}${abbr ? ' (' + abbr + ')' : ''}</option>`;
+  }).join('');
+  sel.value = current;
 }
 
 function populateFilterDropdowns() {
