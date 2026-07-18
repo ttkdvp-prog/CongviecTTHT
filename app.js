@@ -167,6 +167,20 @@ document.addEventListener('DOMContentLoaded', () => {
       autoResizeTextarea(e.target);
     }
   });
+
+  // Đăng ký sự kiện tìm kiếm & đánh giá thống kê
+  const searchStatsBtn = $('stats-btn-search');
+  if (searchStatsBtn) {
+    searchStatsBtn.addEventListener('click', calculateAndRenderStats);
+  }
+  const statsTeamSel = $('stats-team-filter');
+  if (statsTeamSel) {
+    statsTeamSel.addEventListener('change', calculateAndRenderStats);
+  }
+  const statsMonthSel = $('stats-month-filter');
+  if (statsMonthSel) {
+    statsMonthSel.addEventListener('change', calculateAndRenderStats);
+  }
 });
 
 // Tự động điều chỉnh độ cao của textarea theo nội dung
@@ -1780,13 +1794,15 @@ function isTeamMatch(userTeam, filterTeam) {
 }
 
 function calculateAndRenderStats() {
-  const teamFilterVal = $('stats-team-filter').value;
-  const monthFilterVal = $('stats-month-filter').value; // format YYYY-MM
+  const teamFilterVal = $('stats-team-filter') ? $('stats-team-filter').value : '';
+  const monthFilterVal = $('stats-month-filter') ? $('stats-month-filter').value : ''; // format YYYY-MM
   
   if (!monthFilterVal) {
     toast('Vui lòng chọn tháng đánh giá!', 'warning');
     return;
   }
+  
+  toast(`Đang đánh giá Tổ: ${teamFilterVal || 'Tất cả'}, Tháng: ${monthFilterVal}`, 'info');
   
   const [filterYear, filterMonth] = monthFilterVal.split('-').map(x => parseInt(x, 10));
   

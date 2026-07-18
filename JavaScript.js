@@ -2014,6 +2014,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchStatsBtn) {
     searchStatsBtn.addEventListener('click', calculateAndRenderStats);
   }
+  const statsTeamSel = document.getElementById('stats-team-filter');
+  if (statsTeamSel) {
+    statsTeamSel.addEventListener('change', calculateAndRenderStats);
+  }
+  const statsMonthSel = document.getElementById('stats-month-filter');
+  if (statsMonthSel) {
+    statsMonthSel.addEventListener('change', calculateAndRenderStats);
+  }
 
   setupDocForm();
   setupDocFilters();
@@ -5061,13 +5069,18 @@ function isTeamMatch(userTeam, filterTeam) {
 }
 
 function calculateAndRenderStats() {
-  const teamFilterVal = document.getElementById('stats-team-filter').value;
-  const monthFilterVal = document.getElementById('stats-month-filter').value; // format YYYY-MM
+  const statsTeamEl = document.getElementById('stats-team-filter');
+  const statsMonthEl = document.getElementById('stats-month-filter');
+  
+  const teamFilterVal = statsTeamEl ? statsTeamEl.value : '';
+  const monthFilterVal = statsMonthEl ? statsMonthEl.value : ''; // format YYYY-MM
   
   if (!monthFilterVal) {
     showNotification('Vui lòng chọn tháng đánh giá!', 'warning');
     return;
   }
+  
+  showNotification(`Đang hiển thị thống kê Tổ: ${teamFilterVal || 'Tất cả'}, Tháng: ${monthFilterVal}`, 'success');
   
   const [filterYear, filterMonth] = monthFilterVal.split('-').map(x => parseInt(x, 10));
   
