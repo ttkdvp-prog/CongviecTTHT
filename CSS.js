@@ -2811,4 +2811,29 @@ tr.deleting {
 .doc-actions .btn-del:hover {
   background: rgba(244, 63, 94, 0.25);
 }
+
+/* Clickable document title styles */
+.doc-title-clickable {
+  cursor: pointer;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.doc-title-clickable:hover {
+  color: #00c48c !important;
+  text-decoration: underline !important;
+}
+
+#doc-view-modal .modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+#doc-view-modal .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+#doc-view-modal .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
 </style>

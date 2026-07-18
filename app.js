@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupFilters();
   setupDocForm();
   setupDocFilters();
+  setupDocViewModalEvents();
   $('sidebar-toggle').addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
     sidebar.classList.toggle('mobile-open');
@@ -1063,7 +1064,7 @@ function renderDocumentsView(docs) {
     tr.innerHTML = `
       <td>${idx + 1}</td>
       <td><strong>${doc.docNumber || '—'}</strong></td>
-      <td style="white-space: normal; min-width: 250px; font-weight: 500; color: var(--text);">${doc.title}</td>
+      <td style="white-space: normal; min-width: 250px; font-weight: 500; color: var(--text);" class="doc-title-clickable" onclick="showDocViewModal('${doc.id}')">${doc.title}</td>
       <td><span style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);padding:2px 8px;border-radius:12px;font-size:0.8rem;">${doc.category || 'Chưa phân loại'}</span></td>
       <td><span style="color:var(--text2);font-size:0.85rem;">${doc.department || '—'}</span></td>
       <td style="font-weight: 600; color: var(--accent);">${fmtCurrency(doc.contractValue)}</td>
@@ -1071,7 +1072,7 @@ function renderDocumentsView(docs) {
       <td><span style="font-size:0.85rem;color:var(--text2);"><i class="far fa-calendar-alt"></i> ${fmtDate(doc.endDate)}</span></td>
       <td>
         <div class="doc-actions">
-          ${doc.fileUrl ? `<a href="${doc.fileUrl}" target="_blank" class="btn-view" title="Xem tệp"><i class="fas fa-eye"></i></a>` : ''}
+          <button class="btn-view" onclick="showDocViewModal('${doc.id}')" title="Xem chi tiết"><i class="fas fa-eye"></i></button>
           <button class="btn-edit" onclick="openDocModal('${doc.id}')" title="Sửa"><i class="fas fa-pen"></i></button>
           <button class="btn-del" onclick="deleteDocRecord('${doc.id}')" title="Xoá"><i class="fas fa-trash-can"></i></button>
         </div>
@@ -1421,3 +1422,197 @@ async function deleteDocRecord(docId) {
 // Đăng ký toàn cục để gọi inline từ thuộc tính onclick
 window.openDocModal = openDocModal;
 window.deleteDocRecord = deleteDocRecord;
+window.showDocViewModal = showDocViewModal;
+
+// ==================== VIEW MODAL CHI TIẾT TÀI LIỆU ====================
+
+let currentViewingDocId = null;
+
+function showDocViewModal(docId) {
+  const doc = allDocuments.find(d => d.id === docId);
+  if (!doc) return;
+  
+  currentViewingDocId = docId;
+  
+  $('doc-view-title').textContent = doc.title || 'Không có tiêu đề';
+  $('doc-view-number').textContent = doc.docNumber || '—';
+  $('doc-view-project').textContent = doc.project || '—';
+  $('doc-view-supplier').textContent = doc.supplier || '—';
+  $('doc-view-issue-date').textContent = fmtDate(doc.issueDate) || '—';
+  $('doc-view-end-date').textContent = fmtDate(doc.endDate) || '—';
+  
+  $('doc-view-badge-cat').textContent = doc.category || 'Chưa phân loại';
+  $('doc-view-badge-dept').textContent = doc.department || '—';
+  
+  const statusBadge = $('doc-view-badge-status');
+  statusBadge.textContent = doc.status || 'Đang hiệu lực';
+  statusBadge.className = 'badge';
+  let badgeClass = 'badge-doc-active';
+  if (doc.status === 'Hết hiệu lực') badgeClass = 'badge-doc-expired';
+  else if (doc.status === 'Tạm ngưng') badgeClass = 'badge-doc-suspended';
+  else if (doc.status === 'Đang soạn thảo') badgeClass = 'badge-doc-draft';
+  statusBadge.classList.add(badgeClass);
+  
+  const fmtCurrency = (val) => {
+    if (!val) return '0 đ';
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val).replace('₫', 'đ');
+  };
+  
+  $('doc-view-contract-val').textContent = fmtCurrency(doc.contractValue);
+  $('doc-view-actual-val').textContent = fmtCurrency(doc.actualValue);
+  
+  const diffVal = (Number(doc.contractValue) || 0) - (Number(doc.actualValue) || 0);
+  $('doc-view-diff-val').textContent = fmtCurrency(diffVal);
+  
+  $('doc-view-desc').textContent = doc.description || 'Không có mô tả';
+  
+  const iframe = $('doc-view-iframe');
+  const fallback = $('doc-view-no-preview');
+  
+  if (doc.fileUrl && doc.fileUrl !== '#' && doc.fileUrl !== '') {
+    const embedUrl = getEmbedUrl(doc.fileUrl);
+    iframe.src = embedUrl;
+    iframe.style.display = 'block';
+    fallback.style.display = 'none';
+    
+    $('doc-view-btn-download').style.display = 'inline-flex';
+    $('doc-view-btn-share').style.display = 'inline-flex';
+    $('doc-view-btn-replace').style.display = 'inline-flex';
+  } else {
+    iframe.src = '';
+    iframe.style.display = 'none';
+    fallback.style.display = 'block';
+    
+    $('doc-view-btn-download').style.display = 'none';
+    $('doc-view-btn-share').style.display = 'none';
+    $('doc-view-btn-replace').style.display = 'none';
+  }
+  
+  $('doc-view-modal').classList.add('show');
+}
+
+function getEmbedUrl(fileUrl) {
+  if (!fileUrl) return '';
+  const match = fileUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://drive.google.com/file/d/${match[1]}/preview`;
+  }
+  return fileUrl;
+}
+
+function setupDocViewModalEvents() {
+  document.querySelectorAll('[data-close="doc-view-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('doc-view-modal').classList.remove('show');
+      $('doc-view-iframe').src = '';
+    });
+  });
+  
+  $('doc-view-modal').addEventListener('click', e => {
+    if (e.target === $('doc-view-modal')) {
+      $('doc-view-modal').classList.remove('show');
+      $('doc-view-iframe').src = '';
+    }
+  });
+  
+  $('doc-view-btn-download').addEventListener('click', () => {
+    const doc = allDocuments.find(d => d.id === currentViewingDocId);
+    if (doc && doc.fileUrl) {
+      window.open(doc.fileUrl, '_blank');
+    }
+  });
+  
+  $('doc-view-btn-share').addEventListener('click', () => {
+    const doc = allDocuments.find(d => d.id === currentViewingDocId);
+    if (doc && doc.fileUrl) {
+      navigator.clipboard.writeText(doc.fileUrl).then(() => {
+        toast('Đã copy link tài liệu vào bộ nhớ tạm!', 'success');
+      }).catch(err => {
+        console.error('Không thể copy link:', err);
+        prompt('Copy link bên dưới:', doc.fileUrl);
+      });
+    }
+  });
+  
+  $('doc-view-btn-edit').addEventListener('click', () => {
+    const docId = currentViewingDocId;
+    $('doc-view-modal').classList.remove('show');
+    $('doc-view-iframe').src = '';
+    openDocModal(docId);
+  });
+  
+  $('doc-view-btn-replace').addEventListener('click', () => {
+    $('doc-view-replace-file-input').click();
+  });
+  
+  $('doc-view-replace-file-input').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const doc = allDocuments.find(d => d.id === currentViewingDocId);
+    if (!doc) return;
+    
+    showLoading();
+    const reader = new FileReader();
+    reader.onload = async function(evt) {
+      const base64Data = evt.target.result;
+      try {
+        const result = await api.post('uploadFile', {
+          base64Data: base64Data,
+          fileName: file.name,
+          mimeType: file.type
+        });
+        
+        if (result && result.success !== false && result.url) {
+          const updatedDoc = {
+            ...doc,
+            fileName: result.name || file.name,
+            fileUrl: result.url
+          };
+          
+          const saveResult = await api.post('updateDocument', { data: updatedDoc });
+          if (saveResult && saveResult.success !== false) {
+            toast('Thay thế tệp hồ sơ thành công!', 'success');
+            await loadDocData();
+            showDocViewModal(currentViewingDocId);
+          } else {
+            toast(saveResult?.message || 'Không thể cập nhật hồ sơ!', 'error');
+          }
+        } else {
+          toast(result?.message || 'Lỗi khi tải tệp lên!', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        toast('Lỗi kết nối khi thay thế tệp!', 'error');
+      } finally {
+        hideLoading();
+        $('doc-view-replace-file-input').value = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  $('doc-view-btn-delete').addEventListener('click', async () => {
+    const docId = currentViewingDocId;
+    if (confirm('Bạn có chắc chắn muốn xoá hồ sơ tài liệu này?')) {
+      $('doc-view-modal').classList.remove('show');
+      $('doc-view-iframe').src = '';
+      
+      showLoading();
+      try {
+        const result = await api.post('deleteDocument', { docId: docId });
+        if (result && result.success !== false) {
+          toast('Đã xoá tài liệu thành công!', 'success');
+          await loadDocData();
+        } else {
+          toast(result?.message || 'Có lỗi xảy ra khi xoá!', 'error');
+        }
+      } catch (e) {
+        console.error(e);
+        toast('Lỗi kết nối khi xoá!', 'error');
+      } finally {
+        hideLoading();
+      }
+    }
+  });
+}

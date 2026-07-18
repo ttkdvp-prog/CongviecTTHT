@@ -550,6 +550,100 @@
     </div>
   </div>
 
+  <!-- Modal Xem Chi Tiết Hồ Sơ -->
+  <div class="modal" id="doc-view-modal">
+    <div class="modal-content" style="max-width: 900px; width: 95%;">
+      <div class="modal-header">
+        <h3 id="doc-view-title-main"><i class="fas fa-file-invoice"></i> Xem chi tiết hồ sơ</h3>
+        <button class="close-modal" data-close="doc-view-modal">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 20px;">
+        
+        <!-- Top header with doc icon, title and basic tags -->
+        <div style="display: flex; gap: 15px; align-items: flex-start; margin-bottom: 20px;">
+          <div style="background: rgba(0, 196, 140, 0.1); color: #00c48c; width: 60px; height: 60px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; flex-shrink: 0;">
+            <i class="fas fa-file-contract"></i>
+          </div>
+          <div style="flex-grow: 1;">
+            <h2 id="doc-view-title" style="margin: 0 0 10px 0; font-size: 1.4rem; font-weight: 600; color: var(--text);">Tên hồ sơ</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <span class="badge" id="doc-view-badge-cat" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text);">Hợp đồng</span>
+              <span class="badge" id="doc-view-badge-dept" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">Tổ Tổng Hợp</span>
+              <span class="badge" id="doc-view-badge-status" class="badge badge-doc-active">Đang hiệu lực</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Metadata grid -->
+        <div class="doc-view-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Số hồ sơ</span>
+            <strong id="doc-view-number" style="color: var(--text);">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Dự án</span>
+            <strong id="doc-view-project" style="color: var(--text);">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Nhà cung cấp</span>
+            <strong id="doc-view-supplier" style="color: var(--text);">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Ngày ban hành</span>
+            <strong id="doc-view-issue-date" style="color: var(--text);">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Ngày kết thúc</span>
+            <strong id="doc-view-end-date" style="color: var(--text);">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Giá trị hợp đồng</span>
+            <strong id="doc-view-contract-val" style="color: #3b82f6;">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Giá trị thực hiện</span>
+            <strong id="doc-view-actual-val" style="color: #10b981;">—</strong>
+          </div>
+          <div>
+            <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 4px;">Chênh lệch</span>
+            <strong id="doc-view-diff-val" style="color: #f59e0b;">—</strong>
+          </div>
+        </div>
+        
+        <!-- Description Section -->
+        <div style="margin-bottom: 20px;">
+          <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 6px; font-weight: 500;">Mô tả</span>
+          <div id="doc-view-desc" style="background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.04); padding: 12px; border-radius: 6px; color: var(--text); min-height: 50px; white-space: pre-wrap; font-size: 0.95rem;">Không có mô tả</div>
+        </div>
+        
+        <!-- File Preview Section -->
+        <div>
+          <span style="color: #64748b; font-size: 0.85rem; display: block; margin-bottom: 8px; font-weight: 500;">Nội dung tài liệu</span>
+          <div id="doc-view-preview-container" style="position: relative; width: 100%; height: 450px; background: rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+            <!-- Preview iframe or fallback goes here -->
+            <div id="doc-view-no-preview" style="text-align: center; color: #64748b;">
+              <i class="far fa-file-pdf" style="font-size: 3rem; margin-bottom: 15px; display: block; color: rgba(255,255,255,0.1);"></i>
+              <span>Không có tệp đính kèm nào được tải lên cho hồ sơ này</span>
+            </div>
+            <iframe id="doc-view-iframe" src="" style="width: 100%; height: 100%; border: none; display: none;" allow="autoplay"></iframe>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- Footer buttons -->
+      <div class="modal-footer" style="padding: 15px 20px; background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.04); display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center;">
+        <input type="file" id="doc-view-replace-file-input" style="display: none;">
+        <button class="btn" id="doc-view-btn-download" style="background: #3b82f6; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-download"></i> Tải xuống</button>
+        <button class="btn" id="doc-view-btn-share" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 16px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-share-nodes"></i> Chia sẻ link</button>
+        <button class="btn" id="doc-view-btn-edit" style="background: #00c48c; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-edit"></i> Chỉnh sửa</button>
+        <button class="btn" id="doc-view-btn-replace" style="background: #f97316; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-file-arrow-up"></i> Thay thế hồ sơ</button>
+        <button class="btn" id="doc-view-btn-delete" style="background: #ef4444; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-trash-can"></i> Xóa</button>
+        <button class="btn" data-close="doc-view-modal" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast container -->
   <div class="toast-container" id="toast-container"></div>
 
