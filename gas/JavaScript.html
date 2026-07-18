@@ -5048,6 +5048,18 @@ function parseTaskDate(d) {
   return null;
 }
 
+function isTeamMatch(userTeam, filterTeam) {
+  if (!filterTeam) return true;
+  if (!userTeam) return false;
+  
+  const cleanUser = userTeam.trim().toLowerCase();
+  const cleanFilter = filterTeam.trim().toLowerCase();
+  
+  return cleanUser === cleanFilter || 
+         cleanUser.includes(cleanFilter) || 
+         cleanFilter.includes(cleanUser);
+}
+
 function calculateAndRenderStats() {
   const teamFilterVal = document.getElementById('stats-team-filter').value;
   const monthFilterVal = document.getElementById('stats-month-filter').value; // format YYYY-MM
@@ -5063,14 +5075,14 @@ function calculateAndRenderStats() {
   const teamStatsTbody = document.getElementById('team-stats-tbody');
   teamStatsTbody.innerHTML = '';
   
-  const teamsToProcess = teamFilterVal ? allTeams.filter(t => t === teamFilterVal) : allTeams;
+  const teamsToProcess = teamFilterVal ? allTeams.filter(t => isTeamMatch(t, teamFilterVal)) : allTeams;
   
   if (teamsToProcess.length === 0) {
     teamStatsTbody.innerHTML = '<tr><td colspan="7" class="empty-cell" style="text-align: center; padding: 20px;">Không có dữ liệu tổ</td></tr>';
   } else {
     teamsToProcess.forEach(team => {
       // Lấy danh sách thành viên thuộc tổ này
-      const teamUserIds = users.filter(u => u.team === team).map(u => u.id);
+      const teamUserIds = users.filter(u => isTeamMatch(u.team, team)).map(u => u.id);
       
       // Lọc các công việc thuộc tổ (có bất kỳ assignee nào thuộc tổ)
       const teamTasks = allTasks.filter(t => 
@@ -5124,7 +5136,7 @@ function calculateAndRenderStats() {
   const personalStatsTbody = document.getElementById('personal-stats-tbody');
   personalStatsTbody.innerHTML = '';
   
-  const usersToProcess = teamFilterVal ? users.filter(u => u.team === teamFilterVal) : users;
+  const usersToProcess = teamFilterVal ? users.filter(u => isTeamMatch(u.team, teamFilterVal)) : users;
   
   if (usersToProcess.length === 0) {
     personalStatsTbody.innerHTML = '<tr><td colspan="8" class="empty-cell" style="text-align: center; padding: 20px;">Không có thành viên nào</td></tr>';
