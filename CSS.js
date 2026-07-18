@@ -2855,4 +2855,28 @@ tr.deleting {
   background-color: var(--bg2) !important;
   color: var(--text) !important;
 }
+
+/* ===== Statistics Styles ===== */
+.stats-header {
+  margin-top: 10px;
+}
+.stats-filters .filter-item select, 
+.stats-filters .filter-item input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+}
+.stats-filters .filter-item select option {
+  background: var(--bg2) !important;
+  color: var(--text) !important;
+}
+#team-stats-table th, #team-stats-table td,
+#personal-stats-table th, #personal-stats-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+#team-stats-table tbody tr:hover,
+#personal-stats-table tbody tr:hover {
+  background: rgba(255,255,255,0.02);
+}
 </style>

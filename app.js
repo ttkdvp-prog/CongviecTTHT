@@ -252,6 +252,7 @@ function renderAll() {
   populateTeamFilter();
   populateModalTeamFilter();
   populateDocFilterOptions();
+  renderStatsView();
 }
 
 /* ===== Helpers ===== */
@@ -1702,4 +1703,172 @@ function setupDocViewModalEvents() {
       }
     }
   });
+}
+
+/* ===== Statistics & Evaluations ===== */
+function renderStatsView() {
+  const teamFilter = $('stats-team-filter');
+  if (!teamFilter) return;
+  
+  const currentVal = teamFilter.value;
+  teamFilter.innerHTML = '<option value="">Tất cả tổ</option>';
+  allTeams.forEach(t => {
+    teamFilter.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+  });
+  teamFilter.value = currentVal;
+  
+  const monthFilter = $('stats-month-filter');
+  if (monthFilter && !monthFilter.value) {
+    const today = new Date();
+    const formattedMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+    monthFilter.value = formattedMonth;
+  }
+  
+  calculateAndRenderStats();
+}
+
+function parseTaskDate(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    return {
+      day: parseInt(parts[0], 10),
+      month: parseInt(parts[1], 10),
+      year: parseInt(parts[2], 10)
+    };
+  }
+  return null;
+}
+
+function calculateAndRenderStats() {
+  const teamFilterVal = $('stats-team-filter').value;
+  const monthFilterVal = $('stats-month-filter').value; // format YYYY-MM
+  
+  if (!monthFilterVal) {
+    toast('Vui lòng chọn tháng đánh giá!', 'warning');
+    return;
+  }
+  
+  const [filterYear, filterMonth] = monthFilterVal.split('-').map(x => parseInt(x, 10));
+  
+  // 1. Tính toán thống kê theo Tổ
+  const teamStatsTbody = $('team-stats-tbody');
+  teamStatsTbody.innerHTML = '';
+  
+  const teamsToProcess = teamFilterVal ? allTeams.filter(t => t.id === teamFilterVal) : allTeams;
+  
+  if (teamsToProcess.length === 0) {
+    teamStatsTbody.innerHTML = '<tr><td colspan="7" class="empty-cell" style="text-align: center; padding: 20px;">Không có dữ liệu tổ</td></tr>';
+  } else {
+    teamsToProcess.forEach(team => {
+      // Lấy danh sách thành viên thuộc tổ này
+      const teamUserIds = users.filter(u => u.team === team.id).map(u => u.id);
+      
+      // Lọc các công việc thuộc tổ (có bất kỳ assignee nào thuộc tổ)
+      const teamTasks = allTasks.filter(t => 
+        (t.assignees || []).some(aId => teamUserIds.includes(aId))
+      );
+      
+      let assignedInMonth = 0;
+      let inprogressInMonth = 0;
+      let completedInMonth = 0;
+      let overdueInMonth = 0;
+      let backlogInMonth = 0;
+      let cumulativeBacklog = 0;
+      
+      teamTasks.forEach(task => {
+        const parsedDue = parseTaskDate(task.dueDate);
+        if (!parsedDue) return;
+        
+        const isDueInMonth = parsedDue.year === filterYear && parsedDue.month === filterMonth;
+        const isDueOnOrBeforeMonth = parsedDue.year < filterYear || (parsedDue.year === filterYear && parsedDue.month <= filterMonth);
+        const isCompleted = task.status === 'done';
+        const isCancelled = task.status === 'cancelled';
+        
+        if (isDueInMonth) {
+          assignedInMonth++;
+          if (task.status === 'inprogress') inprogressInMonth++;
+          if (isCompleted) completedInMonth++;
+          if (task.status === 'overdue') overdueInMonth++;
+          if (!isCompleted && !isCancelled) backlogInMonth++;
+        }
+        
+        if (isDueOnOrBeforeMonth && !isCompleted && !isCancelled) {
+          cumulativeBacklog++;
+        }
+      });
+      
+      teamStatsTbody.innerHTML += `
+        <tr>
+          <td><strong>${team.name}</strong></td>
+          <td style="text-align: center; font-weight: 600;">${assignedInMonth}</td>
+          <td style="text-align: center; color: var(--accent2);">${inprogressInMonth}</td>
+          <td style="text-align: center; color: var(--accent); font-weight: 600;">${completedInMonth}</td>
+          <td style="text-align: center; color: var(--amber);">${backlogInMonth}</td>
+          <td style="text-align: center; color: var(--rose); font-weight: 600;">${overdueInMonth}</td>
+          <td style="text-align: center; background: rgba(244,63,94,0.06); color: var(--rose); font-weight: bold;">${cumulativeBacklog}</td>
+        </tr>
+      `;
+    });
+  }
+  
+  // 2. Tính toán thống kê theo Cá nhân
+  const personalStatsTbody = $('personal-stats-tbody');
+  personalStatsTbody.innerHTML = '';
+  
+  const usersToProcess = teamFilterVal ? users.filter(u => u.team === teamFilterVal) : users;
+  
+  if (usersToProcess.length === 0) {
+    personalStatsTbody.innerHTML = '<tr><td colspan="8" class="empty-cell" style="text-align: center; padding: 20px;">Không có thành viên nào</td></tr>';
+  } else {
+    usersToProcess.forEach(user => {
+      // Lấy các công việc được giao cho cá nhân này
+      const userTasks = allTasks.filter(t => (t.assignees || []).includes(user.id));
+      
+      let assignedInMonth = 0;
+      let inprogressInMonth = 0;
+      let completedInMonth = 0;
+      let overdueInMonth = 0;
+      let backlogInMonth = 0;
+      let cumulativeBacklog = 0;
+      
+      userTasks.forEach(task => {
+        const parsedDue = parseTaskDate(task.dueDate);
+        if (!parsedDue) return;
+        
+        const isDueInMonth = parsedDue.year === filterYear && parsedDue.month === filterMonth;
+        const isDueOnOrBeforeMonth = parsedDue.year < filterYear || (parsedDue.year === filterYear && parsedDue.month <= filterMonth);
+        const isCompleted = task.status === 'done';
+        const isCancelled = task.status === 'cancelled';
+        
+        if (isDueInMonth) {
+          assignedInMonth++;
+          if (task.status === 'inprogress') inprogressInMonth++;
+          if (isCompleted) completedInMonth++;
+          if (task.status === 'overdue') overdueInMonth++;
+          if (!isCompleted && !isCancelled) backlogInMonth++;
+        }
+        
+        if (isDueOnOrBeforeMonth && !isCompleted && !isCancelled) {
+          cumulativeBacklog++;
+        }
+      });
+      
+      const userTeamObj = allTeams.find(t => t.id === user.team);
+      const userTeamName = userTeamObj ? userTeamObj.name : 'Chưa phân tổ';
+      
+      personalStatsTbody.innerHTML += `
+        <tr>
+          <td><strong>${user.name}</strong> (${user.id})</td>
+          <td><span style="font-size: 0.85rem; color: var(--text2);">${userTeamName}</span></td>
+          <td style="text-align: center; font-weight: 600;">${assignedInMonth}</td>
+          <td style="text-align: center; color: var(--accent2);">${inprogressInMonth}</td>
+          <td style="text-align: center; color: var(--accent); font-weight: 600;">${completedInMonth}</td>
+          <td style="text-align: center; color: var(--amber);">${backlogInMonth}</td>
+          <td style="text-align: center; color: var(--rose); font-weight: 600;">${overdueInMonth}</td>
+          <td style="text-align: center; background: rgba(244,63,94,0.06); color: var(--rose); font-weight: bold;">${cumulativeBacklog}</td>
+        </tr>
+      `;
+    });
+  }
 }

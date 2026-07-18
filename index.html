@@ -54,6 +54,10 @@
         <i class="fas fa-users-gear"></i>
         <span>Người dùng</span>
       </a>
+      <a href="#" class="nav-link" data-view="stats" id="nav-stats">
+        <i class="fas fa-chart-column"></i>
+        <span>Đánh giá & Thống kê</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -317,6 +321,72 @@
             <tr><td colspan="9" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu tài liệu...</td></tr>
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ==================== STATISTICS VIEW ==================== -->
+    <section class="view" id="stats-view">
+      <div class="stats-header glass" style="padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+        <div class="stats-filters" style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap; width: 100%;">
+          <div class="filter-item" style="display: flex; align-items: center; gap: 8px;">
+            <label for="stats-team-filter" style="font-size: 0.9rem; color: var(--text2); font-weight: 500; white-space: nowrap;"><i class="fas fa-users-rectangle"></i> Tổ:</label>
+            <select id="stats-team-filter" class="filter-select" style="min-width: 150px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: var(--text); cursor: pointer;">
+              <option value="">Tất cả tổ</option>
+            </select>
+          </div>
+          <div class="filter-item" style="display: flex; align-items: center; gap: 8px;">
+            <label for="stats-month-filter" style="font-size: 0.9rem; color: var(--text2); font-weight: 500; white-space: nowrap;"><i class="fas fa-calendar-days"></i> Tháng đánh giá:</label>
+            <input type="month" id="stats-month-filter" class="filter-select" style="min-width: 150px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: var(--text); cursor: pointer; font-family: inherit;">
+          </div>
+          <button class="btn-primary" id="stats-btn-search" style="padding: 8px 16px; border-radius: 10px; background: var(--accent); color: #fff; border: none; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"><i class="fas fa-magnifying-glass"></i> Tìm kiếm & Đánh giá</button>
+        </div>
+      </div>
+
+      <!-- Báo cáo Tổng quan từng Tổ -->
+      <div class="stats-section glass" style="margin-top: 20px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+        <h3 style="color: var(--accent); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 600;"><i class="fas fa-users"></i> Báo cáo thống kê theo Tổ</h3>
+        <div class="table-container" style="overflow-x: auto;">
+          <table class="data-table" id="team-stats-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <th style="text-align: left; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Tên Tổ</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Tổng việc giao</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Đang thực hiện</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Thực hiện xong</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Tồn trong tháng</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Quá hạn</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Lũy kế tồn</th>
+              </tr>
+            </thead>
+            <tbody id="team-stats-tbody">
+              <tr><td colspan="7" class="empty-cell" style="text-align: center; padding: 30px; color: var(--text3);"><i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng click nút Tìm kiếm & Đánh giá để tải dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Báo cáo Chi tiết từng Cá nhân -->
+      <div class="stats-section glass" style="margin-top: 20px; padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+        <h3 style="color: var(--accent2); margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 1.1rem; font-weight: 600;"><i class="fas fa-user-tie"></i> Báo cáo chi tiết theo Cá nhân</h3>
+        <div class="table-container" style="overflow-x: auto;">
+          <table class="data-table" id="personal-stats-table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <th style="text-align: left; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Họ và Tên</th>
+                <th style="text-align: left; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Tổ phụ trách</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Tổng việc giao</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Đang thực hiện</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Thực hiện xong</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Tồn trong tháng</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Quá hạn</th>
+                <th style="text-align: center; padding: 12px; color: var(--text2); font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Lũy kế tồn</th>
+              </tr>
+            </thead>
+            <tbody id="personal-stats-tbody">
+              <tr><td colspan="8" class="empty-cell" style="text-align: center; padding: 30px; color: var(--text3);"><i class="fas fa-chart-pie" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng click nút Tìm kiếm & Đánh giá để tải dữ liệu</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>
