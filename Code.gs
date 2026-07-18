@@ -10,6 +10,9 @@ function doGet(e) {
     .evaluate()
     .setTitle('Quản lý công việc TTHT')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .addMetaTag('description', 'quản lý công việc TTHT')
+    .addMetaTag('og:title', 'Quản lý công việc TTHT')
+    .addMetaTag('og:description', 'quản lý công việc TTHT')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .setFaviconUrl("https://cdn-icons-png.flaticon.com/512/2098/2098402.png");
 }
