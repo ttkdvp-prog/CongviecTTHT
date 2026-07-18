@@ -1423,3 +1423,9 @@ function uploadFileToDrive(base64Data, fileName, mimeType) {
     return { success: false, message: "Lỗi tải tệp: " + e.toString() };
   }
 }
+
+// Hàm chạy thử để kích hoạt hộp thoại cấp quyền Google Drive
+function triggerDriveAuth() {
+  DriveApp.getRootFolder();
+  Logger.log("Đã kích hoạt quyền thành công!");
+}
