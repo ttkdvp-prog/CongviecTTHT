@@ -548,7 +548,7 @@ function getTasks() {
     const sheets = setupSheets();
     
     // Lấy dữ liệu công việc
-    const tasksData = sheets.tasks.getRange(2, 1, Math.max(1, sheets.tasks.getLastRow() - 1), 10).getValues();
+    const tasksData = sheets.tasks.getRange(2, 1, Math.max(1, sheets.tasks.getLastRow() - 1), 14).getValues();
     const subtasksData = sheets.subtasks.getRange(2, 1, Math.max(1, sheets.subtasks.getLastRow() - 1), 4).getValues();
     const assigneesData = sheets.assignees.getRange(2, 1, Math.max(1, sheets.assignees.getLastRow() - 1), 4).getValues();
     const attachmentsData = sheets.attachments.getRange(2, 1, Math.max(1, sheets.attachments.getLastRow() - 1), 4).getValues();
@@ -599,7 +599,7 @@ function getTasks() {
       }
       
       // Tính tiến độ dựa trên công việc con
-      let progress = parseInt(row[7]);
+      let progress = parseInt(row[10]);
       if (isNaN(progress) || progress < 0 || progress > 100) {
         if (subtasks.length > 0) {
           const completed = subtasks.filter(sub => sub.completed).length;
@@ -611,9 +611,9 @@ function getTasks() {
       
       // Xử lý ngày tháng
       let startDate = "";
-      if (row[5]) {
+      if (row[8]) {
         // Đảm bảo định dạng dd/MM/yyyy
-        const dateValue = row[5];
+        const dateValue = row[8];
         if (dateValue instanceof Date) {
           // Nếu là đối tượng Date, chuyển đổi sang chuỗi dd/MM/yyyy
           const day = dateValue.getDate().toString().padStart(2, '0');
@@ -627,9 +627,9 @@ function getTasks() {
       }
       
       let dueDate = "";
-      if (row[6]) {
+      if (row[9]) {
         // Đảm bảo định dạng dd/MM/yyyy
-        const dateValue = row[6];
+        const dateValue = row[9];
         if (dateValue instanceof Date) {
           // Nếu là đối tượng Date, chuyển đổi sang chuỗi dd/MM/yyyy
           const day = dateValue.getDate().toString().padStart(2, '0');
@@ -647,13 +647,13 @@ function getTasks() {
         id: taskId,
         title: String(row[1]),
         description: String(row[2]),
-        status: String(row[3]),
-        priority: String(row[4]),
+        status: String(row[6]),
+        priority: String(row[7]),
         startDate: startDate,
         dueDate: dueDate,
         progress: progress,
-        planValue: row[8] !== undefined && row[8] !== "" ? Number(row[8]) : 0,
-        actualValue: row[9] !== undefined && row[9] !== "" ? Number(row[9]) : 0,
+        planValue: row[11] !== undefined && row[11] !== "" ? Number(row[11]) : 0,
+        actualValue: row[12] !== undefined && row[12] !== "" ? Number(row[12]) : 0,
         subtasks: subtasks,
         assignees: assignees,
         attachments: attachments
@@ -688,18 +688,41 @@ function addTask(taskData) {
         ('0' + now.getSeconds()).slice(-2);
     const taskId = "task-" + formattedDate
 
+    // Lấy thông tin người phụ trách để ghi vào các cột D, E, F của sheet Tasks
+    let assigneeIds = "";
+    let assigneeNames = "";
+    let assigneeTeams = "";
+    if (taskData.assignees && taskData.assignees.length > 0) {
+      try {
+        const allUsers = getUsers();
+        const matchedUsers = taskData.assignees.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
+        assigneeIds = matchedUsers.map(u => u.id).join(', ');
+        assigneeNames = matchedUsers.map(u => u.name).join(', ');
+        assigneeTeams = matchedUsers.map(u => u.team || '').filter(Boolean).join(', ');
+      } catch (err) {
+        Logger.log("Lỗi mapping người phụ trách: " + err.toString());
+      }
+    }
+
+    const nextRow = sheets.tasks.getLastRow() + 1;
+    const ratioFormula = `=IF(L${nextRow}>0, M${nextRow}/L${nextRow}, 0)`;
+
     // Thêm công việc chính
     sheets.tasks.appendRow([
       taskId,
       taskData.title,
       taskData.description || "",
+      assigneeIds,
+      assigneeNames,
+      assigneeTeams,
       taskData.status || "inprogress",
       taskData.priority || "medium",
       taskData.startDate || "",
       taskData.dueDate || "",
       taskData.subtasks && taskData.subtasks.length > 0 ? "0" : "",
       taskData.planValue !== undefined ? Number(taskData.planValue) : 0,
-      taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0
+      taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0,
+      ratioFormula
     ]);
     
     // Thêm công việc con
@@ -826,13 +849,32 @@ function updateTask(taskData) {
       }
     }
     
+    // Lấy thông tin người phụ trách để ghi vào các cột D, E, F của sheet Tasks
+    let assigneeIds = "";
+    let assigneeNames = "";
+    let assigneeTeams = "";
+    if (taskData.assignees && taskData.assignees.length > 0) {
+      try {
+        const allUsers = getUsers();
+        const matchedUsers = taskData.assignees.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
+        assigneeIds = matchedUsers.map(u => u.id).join(', ');
+        assigneeNames = matchedUsers.map(u => u.name).join(', ');
+        assigneeTeams = matchedUsers.map(u => u.team || '').filter(Boolean).join(', ');
+      } catch (err) {
+        Logger.log("Lỗi mapping người phụ trách: " + err.toString());
+      }
+    }
+
     // Cập nhật thông tin công việc
     sheets.tasks.getRange(taskRowIndex, 2).setValue(taskData.title);
     sheets.tasks.getRange(taskRowIndex, 3).setValue(taskData.description || "");
-    sheets.tasks.getRange(taskRowIndex, 4).setValue(taskData.status || "inprogress");
-    sheets.tasks.getRange(taskRowIndex, 5).setValue(taskData.priority || "medium");
-    sheets.tasks.getRange(taskRowIndex, 6).setValue(startDate);
-    sheets.tasks.getRange(taskRowIndex, 7).setValue(dueDate);
+    sheets.tasks.getRange(taskRowIndex, 4).setValue(assigneeIds);
+    sheets.tasks.getRange(taskRowIndex, 5).setValue(assigneeNames);
+    sheets.tasks.getRange(taskRowIndex, 6).setValue(assigneeTeams);
+    sheets.tasks.getRange(taskRowIndex, 7).setValue(taskData.status || "inprogress");
+    sheets.tasks.getRange(taskRowIndex, 8).setValue(taskData.priority || "medium");
+    sheets.tasks.getRange(taskRowIndex, 9).setValue(startDate);
+    sheets.tasks.getRange(taskRowIndex, 10).setValue(dueDate);
     
     // Tính toán và cập nhật tiến độ
     let progress = 0;
@@ -845,11 +887,12 @@ function updateTask(taskData) {
       progress = 0;
     }
     
-    sheets.tasks.getRange(taskRowIndex, 8).setValue(progress.toString());
+    sheets.tasks.getRange(taskRowIndex, 11).setValue(progress.toString());
     
-    // Cập nhật Kế hoạch & Thực hiện
-    sheets.tasks.getRange(taskRowIndex, 9).setValue(taskData.planValue !== undefined ? Number(taskData.planValue) : 0);
-    sheets.tasks.getRange(taskRowIndex, 10).setValue(taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0);
+    // Cập nhật Kế hoạch & Thực hiện & Tỷ lệ
+    sheets.tasks.getRange(taskRowIndex, 12).setValue(taskData.planValue !== undefined ? Number(taskData.planValue) : 0);
+    sheets.tasks.getRange(taskRowIndex, 13).setValue(taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0);
+    sheets.tasks.getRange(taskRowIndex, 14).setValue(`=IF(L${taskRowIndex}>0, M${taskRowIndex}/L${taskRowIndex}, 0)`);
     
     // Xóa công việc con cũ và thêm công việc con mới
     const subtasksSheet = sheets.subtasks;
@@ -1092,8 +1135,8 @@ function checkOverdueTasks() {
       if (!row[0]) continue; // Bỏ qua hàng trống
       
       const taskId = row[0];
-      const status = row[3];
-      const dueDate = row[6];
+      const status = row[6];
+      const dueDate = row[9];
       
       // Bỏ qua nếu công việc đã hoàn thành, đã huỷ hoặc đã quá hạn
       if (status === 'done' || status === 'cancelled' || status === 'overdue') {
@@ -1110,7 +1153,7 @@ function checkOverdueTasks() {
         
         if (dueDateOnly < todayOnly) {
           // Cập nhật trạng thái thành quá hạn
-          tasksSheet.getRange(i + 1, 4).setValue('overdue');
+          tasksSheet.getRange(i + 1, 7).setValue('overdue');
           hasUpdated = true;
           Logger.log("Đã cập nhật công việc " + taskId + " thành quá hạn");
         }
