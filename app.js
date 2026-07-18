@@ -408,6 +408,8 @@ function openTaskModal(task) {
     $('task-status').value = task.status || 'inprogress';
     $('task-start').value = toInputDate(task.startDate);
     $('task-due').value = toInputDate(task.dueDate);
+    $('task-plan-value').value = task.planValue || '';
+    $('task-actual-value').value = task.actualValue || '';
     // Assignees
     (task.assignees || []).forEach(aId => {
       const chip = document.querySelector(`.assignee-chip[data-id="${aId}"]`);
@@ -572,6 +574,8 @@ function setupTaskForm() {
       startDate: startVal ? fromInputDate(startVal) : '',
       dueDate: dueVal ? fromInputDate(dueVal) : '',
       progress,
+      planValue: Number($('task-plan-value').value) || 0,
+      actualValue: Number($('task-actual-value').value) || 0,
       assignees: selectedAssignees,
       subtasks,
       attachments: []

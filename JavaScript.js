@@ -510,9 +510,10 @@ function openTaskModal(isEdit = false, taskData = null, status = null) {
       document.getElementById('task-priority').value = taskData.priority || 'medium';
       document.getElementById('task-status').value = taskData.status || 'inprogress';
       
-      // Sửa lại cách xử lý ngày tháng - chuyển đổi từ định dạng dd/mm/yyyy sang yyyy-mm-dd cho input date
       document.getElementById('task-start-date').value = convertDateForInput(taskData.startDate);
       document.getElementById('task-due-date').value = convertDateForInput(taskData.dueDate);
+      document.getElementById('task-plan-value').value = taskData.planValue || '';
+      document.getElementById('task-actual-value').value = taskData.actualValue || '';
       
       // Xử lý người phụ trách
       const assigneeIds = taskData.assignees || [];
@@ -542,6 +543,8 @@ function openTaskModal(isEdit = false, taskData = null, status = null) {
     modalTitle.textContent = 'Thêm Công Việc Mới';
     taskForm.reset();
     document.getElementById('task-id').value = '';
+    document.getElementById('task-plan-value').value = '';
+    document.getElementById('task-actual-value').value = '';
     
     // Xóa tệp đính kèm và công việc con
     document.querySelector('.attachment-preview').innerHTML = '';
@@ -2000,6 +2003,8 @@ taskForm.addEventListener('submit', (e) => {
     status: document.getElementById('task-status').value,
     startDate: formatDate(startDateInput),
     dueDate: formatDate(dueDateInput),
+    planValue: Number(document.getElementById('task-plan-value').value) || 0,
+    actualValue: Number(document.getElementById('task-actual-value').value) || 0,
     
     // Thu thập người phụ trách
     assignees: Array.from(document.querySelectorAll('.assignee-checkbox:checked')).map(

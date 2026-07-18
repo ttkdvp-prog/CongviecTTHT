@@ -125,7 +125,7 @@ function setupSheets() {
       tasks = ss.insertSheet("Tasks");
       tasks.appendRow([
         "ID", "Tiêu đề", "Mô tả", "Trạng thái", "Mức độ ưu tiên", 
-        "Ngày bắt đầu", "Ngày kết thúc", "Tiến độ"
+        "Ngày bắt đầu", "Ngày kết thúc", "Tiến độ", "Kế hoạch", "Thực hiện"
       ]);
     }
     
@@ -548,7 +548,7 @@ function getTasks() {
     const sheets = setupSheets();
     
     // Lấy dữ liệu công việc
-    const tasksData = sheets.tasks.getRange(2, 1, Math.max(1, sheets.tasks.getLastRow() - 1), 8).getValues();
+    const tasksData = sheets.tasks.getRange(2, 1, Math.max(1, sheets.tasks.getLastRow() - 1), 10).getValues();
     const subtasksData = sheets.subtasks.getRange(2, 1, Math.max(1, sheets.subtasks.getLastRow() - 1), 4).getValues();
     const assigneesData = sheets.assignees.getRange(2, 1, Math.max(1, sheets.assignees.getLastRow() - 1), 4).getValues();
     const attachmentsData = sheets.attachments.getRange(2, 1, Math.max(1, sheets.attachments.getLastRow() - 1), 4).getValues();
@@ -652,6 +652,8 @@ function getTasks() {
         startDate: startDate,
         dueDate: dueDate,
         progress: progress,
+        planValue: row[8] !== undefined && row[8] !== "" ? Number(row[8]) : 0,
+        actualValue: row[9] !== undefined && row[9] !== "" ? Number(row[9]) : 0,
         subtasks: subtasks,
         assignees: assignees,
         attachments: attachments
@@ -695,7 +697,9 @@ function addTask(taskData) {
       taskData.priority || "medium",
       taskData.startDate || "",
       taskData.dueDate || "",
-      taskData.subtasks && taskData.subtasks.length > 0 ? "0" : ""
+      taskData.subtasks && taskData.subtasks.length > 0 ? "0" : "",
+      taskData.planValue !== undefined ? Number(taskData.planValue) : 0,
+      taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0
     ]);
     
     // Thêm công việc con
@@ -842,6 +846,10 @@ function updateTask(taskData) {
     }
     
     sheets.tasks.getRange(taskRowIndex, 8).setValue(progress.toString());
+    
+    // Cập nhật Kế hoạch & Thực hiện
+    sheets.tasks.getRange(taskRowIndex, 9).setValue(taskData.planValue !== undefined ? Number(taskData.planValue) : 0);
+    sheets.tasks.getRange(taskRowIndex, 10).setValue(taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0);
     
     // Xóa công việc con cũ và thêm công việc con mới
     const subtasksSheet = sheets.subtasks;
