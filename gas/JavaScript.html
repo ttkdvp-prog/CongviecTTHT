@@ -4994,7 +4994,8 @@ function renderStatsView() {
   const currentVal = teamFilter.value;
   teamFilter.innerHTML = '<option value="">Tất cả tổ</option>';
   allTeams.forEach(t => {
-    teamFilter.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+    const abbr = getTeamAbbr ? getTeamAbbr(t) : '';
+    teamFilter.innerHTML += `<option value="${t}">${t}${abbr ? ' (' + abbr + ')' : ''}</option>`;
   });
   teamFilter.value = currentVal;
   
@@ -5008,16 +5009,42 @@ function renderStatsView() {
   calculateAndRenderStats();
 }
 
-function parseTaskDate(dateStr) {
-  if (!dateStr) return null;
-  const parts = dateStr.split('/');
-  if (parts.length === 3) {
+function parseTaskDate(d) {
+  if (!d) return null;
+  
+  // 1. Nếu là đối tượng Date
+  if (d instanceof Date) {
+    return {
+      day: d.getDate(),
+      month: d.getMonth() + 1,
+      year: d.getFullYear()
+    };
+  }
+  
+  // 2. Nếu là chuỗi định dạng dd/MM/yyyy
+  if (typeof d === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(d)) {
+    const parts = d.split('/');
     return {
       day: parseInt(parts[0], 10),
       month: parseInt(parts[1], 10),
       year: parseInt(parts[2], 10)
     };
   }
+  
+  // 3. Nếu là chuỗi định dạng khác (ISO date, v.v.)
+  try {
+    const dt = new Date(d);
+    if (!isNaN(dt.getTime())) {
+      return {
+        day: dt.getDate(),
+        month: dt.getMonth() + 1,
+        year: dt.getFullYear()
+      };
+    }
+  } catch (e) {
+    console.error("Lỗi parse ngày:", e);
+  }
+  
   return null;
 }
 
@@ -5036,14 +5063,14 @@ function calculateAndRenderStats() {
   const teamStatsTbody = document.getElementById('team-stats-tbody');
   teamStatsTbody.innerHTML = '';
   
-  const teamsToProcess = teamFilterVal ? allTeams.filter(t => t.id === teamFilterVal) : allTeams;
+  const teamsToProcess = teamFilterVal ? allTeams.filter(t => t === teamFilterVal) : allTeams;
   
   if (teamsToProcess.length === 0) {
     teamStatsTbody.innerHTML = '<tr><td colspan="7" class="empty-cell" style="text-align: center; padding: 20px;">Không có dữ liệu tổ</td></tr>';
   } else {
     teamsToProcess.forEach(team => {
       // Lấy danh sách thành viên thuộc tổ này
-      const teamUserIds = users.filter(u => u.team === team.id).map(u => u.id);
+      const teamUserIds = users.filter(u => u.team === team).map(u => u.id);
       
       // Lọc các công việc thuộc tổ (có bất kỳ assignee nào thuộc tổ)
       const teamTasks = allTasks.filter(t => 
@@ -5081,7 +5108,7 @@ function calculateAndRenderStats() {
       
       teamStatsTbody.innerHTML += `
         <tr>
-          <td><strong>${team.name}</strong></td>
+          <td><strong>${team}</strong></td>
           <td style="text-align: center; font-weight: 600;">${assignedInMonth}</td>
           <td style="text-align: center; color: #0ea5e9;">${inprogressInMonth}</td>
           <td style="text-align: center; color: #00c48c; font-weight: 600;">${completedInMonth}</td>
@@ -5135,8 +5162,7 @@ function calculateAndRenderStats() {
         }
       });
       
-      const userTeamObj = allTeams.find(t => t.id === user.team);
-      const userTeamName = userTeamObj ? userTeamObj.name : 'Chưa phân tổ';
+      const userTeamName = user.team || 'Chưa phân tổ';
       
       personalStatsTbody.innerHTML += `
         <tr>
