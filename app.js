@@ -140,6 +140,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // Xử lý thay đổi ghi chú trực tiếp trên bảng
+  document.addEventListener('change', async e => {
+    if (e.target.classList.contains('table-note-textarea')) {
+      const taskId = e.target.dataset.id;
+      const val = e.target.value || '';
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      task.notes = val;
+      
+      try {
+        await api.post('updateTask', { data: task });
+        toast('Đã lưu ghi chú!', 'success');
+      } catch (err) {
+        console.error(err);
+        toast('Lỗi khi lưu ghi chú!', 'error');
+      }
+    }
+  });
 });
 
 /* ===== Loading ===== */
@@ -381,6 +401,7 @@ function renderListView(tasks) {
       <td>${plan}</td>
       <td><input type="number" class="table-actual-input" value="${actual}" data-id="${t.id}" min="0" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.9rem; font-weight: 500; outline: none; transition: all 0.2s;"></td>
       <td class="ratio-cell"><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
+      <td><textarea class="table-note-textarea" data-id="${t.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: vertical; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${t.notes || ''}</textarea></td>
       <td><div class="table-actions">
         <button class="btn-edit" title="Sửa" onclick="editTask('${t.id}')"><i class="fas fa-pen"></i></button>
         <button class="btn-del" title="Xóa" onclick="delTask('${t.id}')"><i class="fas fa-trash"></i></button>
@@ -438,6 +459,7 @@ function openTaskModal(task) {
   $('subtask-list').innerHTML = '';
   $('modal-team-filter').value = '';
   $('modal-assignee-search').value = '';
+  $('task-notes').value = '';
   populateAssigneePicker();
 
   if (isEdit) {
@@ -450,6 +472,7 @@ function openTaskModal(task) {
     $('task-due').value = toInputDate(task.dueDate);
     $('task-plan-value').value = task.planValue || '';
     $('task-actual-value').value = task.actualValue || '';
+    $('task-notes').value = task.notes || '';
     // Assignees
     (task.assignees || []).forEach(aId => {
       const chip = document.querySelector(`.assignee-chip[data-id="${aId}"]`);
@@ -616,6 +639,7 @@ function setupTaskForm() {
       progress,
       planValue: Number($('task-plan-value').value) || 0,
       actualValue: Number($('task-actual-value').value) || 0,
+      notes: $('task-notes').value.trim(),
       assignees: selectedAssignees,
       subtasks,
       attachments: []

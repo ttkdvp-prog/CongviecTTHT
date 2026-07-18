@@ -514,6 +514,7 @@ function openTaskModal(isEdit = false, taskData = null, status = null) {
       document.getElementById('task-due-date').value = convertDateForInput(taskData.dueDate);
       document.getElementById('task-plan-value').value = taskData.planValue || '';
       document.getElementById('task-actual-value').value = taskData.actualValue || '';
+      document.getElementById('task-notes').value = taskData.notes || '';
       
       // Xử lý người phụ trách
       const assigneeIds = taskData.assignees || [];
@@ -545,6 +546,7 @@ function openTaskModal(isEdit = false, taskData = null, status = null) {
     document.getElementById('task-id').value = '';
     document.getElementById('task-plan-value').value = '';
     document.getElementById('task-actual-value').value = '';
+    document.getElementById('task-notes').value = '';
     
     // Xóa tệp đính kèm và công việc con
     document.querySelector('.attachment-preview').innerHTML = '';
@@ -1149,6 +1151,7 @@ function renderListView(tasks) {
       <td>${plan}</td>
       <td><input type="number" class="table-actual-input" value="${actual}" data-id="${task.id}" min="0" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.9rem; font-weight: 500; outline: none; transition: all 0.2s;"></td>
       <td class="ratio-cell"><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
+      <td><textarea class="table-note-textarea" data-id="${task.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: vertical; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${task.notes || ''}</textarea></td>
       <td>${attachmentsHtml}</td>
       <td class="action-cell">
         <button class="edit-task-btn"><i class="fas fa-edit"></i></button>
@@ -1178,7 +1181,7 @@ function renderListView(tasks) {
       
       subtaskRow.innerHTML = `
         <td></td>
-        <td colspan="13">
+        <td colspan="14">
           <div class="subtasks-table">
             ${subtasksHtml}
           </div>
@@ -1963,6 +1966,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Xử lý thay đổi ghi chú trực tiếp trên bảng
+  document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('table-note-textarea')) {
+      const taskId = e.target.dataset.id;
+      const val = e.target.value || '';
+      
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      task.notes = val;
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          if (!result.success) {
+            showNotification(result.message || 'Lỗi khi cập nhật ghi chú', 'error', true);
+            loadData(true);
+          } else {
+            updateTaskInCache(task);
+            showNotification('Đã cập nhật ghi chú thành công!', 'success');
+          }
+        })
+        .withFailureHandler(function(error) {
+          showNotification('Lỗi kết nối: ' + error, 'error', true);
+          loadData(true);
+        })
+        .updateTask(task);
+    }
+  });
+
   setupDocForm();
   setupDocFilters();
   setupDocViewModalEvents();
@@ -2054,6 +2086,7 @@ taskForm.addEventListener('submit', (e) => {
     dueDate: formatDate(dueDateInput),
     planValue: Number(document.getElementById('task-plan-value').value) || 0,
     actualValue: Number(document.getElementById('task-actual-value').value) || 0,
+    notes: document.getElementById('task-notes').value.trim(),
     
     // Thu thập người phụ trách
     assignees: Array.from(document.querySelectorAll('.assignee-checkbox:checked')).map(

@@ -214,11 +214,12 @@
               <th>Kế hoạch</th>
               <th>Thực hiện</th>
               <th>Tỷ lệ</th>
+              <th>Ghi chú</th>
               <th>Thao tác</th>
             </tr>
           </thead>
           <tbody id="task-table-body">
-            <tr><td colspan="11" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu...</td></tr>
+            <tr><td colspan="12" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu...</td></tr>
           </tbody>
         </table>
       </div>
@@ -399,6 +400,10 @@
               <button type="button" class="btn-icon btn-add-subtask" id="add-subtask-btn"><i class="fas fa-plus"></i></button>
             </div>
             <div class="subtask-list" id="subtask-list"></div>
+          </div>
+          <div class="form-group">
+            <label for="task-notes">Ghi chú (Lý do tồn việc...)</label>
+            <textarea id="task-notes" rows="2" placeholder="Nhập ghi chú hoặc lý do tồn việc..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text); outline: none; font-family: inherit; resize: vertical; transition: var(--transition);"></textarea>
           </div>
           <div class="form-actions">
             <button type="button" class="btn-secondary" data-close="task-modal">Huỷ bỏ</button>
