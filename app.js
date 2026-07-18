@@ -109,6 +109,37 @@ document.addEventListener('DOMContentLoaded', () => {
   $('next-month-btn').addEventListener('click', () => navigateGanttMonth(1));
   initGanttScrollSync();
   loadAllData();
+  
+  // Xử lý thay đổi số liệu thực hiện trực tiếp trên bảng
+  document.addEventListener('change', async e => {
+    if (e.target.classList.contains('table-actual-input')) {
+      const taskId = e.target.dataset.id;
+      const val = Number(e.target.value) || 0;
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      task.actualValue = val;
+      
+      const tr = e.target.closest('tr');
+      if (tr) {
+        const plan = task.planValue || 0;
+        const ratio = plan > 0 ? Math.round((val / plan) * 100) + '%' : '—';
+        const ratioEl = tr.querySelector('.ratio-cell strong');
+        if (ratioEl) {
+          ratioEl.textContent = ratio;
+          ratioEl.style.color = plan > 0 && val >= plan ? '#00c48c' : 'inherit';
+        }
+      }
+      
+      try {
+        await api.post('updateTask', { data: task });
+        toast('Đã cập nhật số liệu thực hiện!', 'success');
+      } catch (err) {
+        console.error(err);
+        toast('Lỗi khi lưu số liệu thực hiện!', 'error');
+      }
+    }
+  });
 });
 
 /* ===== Loading ===== */
@@ -348,8 +379,8 @@ function renderListView(tasks) {
       <td>${fmtDate(t.dueDate)}</td>
       <td><div class="progress-sm"><div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><span>${p}%</span></div></td>
       <td>${plan}</td>
-      <td>${actual}</td>
-      <td><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
+      <td><input type="number" class="table-actual-input" value="${actual}" data-id="${t.id}" min="0" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.9rem; font-weight: 500; outline: none; transition: all 0.2s;"></td>
+      <td class="ratio-cell"><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
       <td><div class="table-actions">
         <button class="btn-edit" title="Sửa" onclick="editTask('${t.id}')"><i class="fas fa-pen"></i></button>
         <button class="btn-del" title="Xóa" onclick="delTask('${t.id}')"><i class="fas fa-trash"></i></button>

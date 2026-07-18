@@ -2836,4 +2836,18 @@ tr.deleting {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
+
+.table-actual-input::-webkit-outer-spin-button,
+.table-actual-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.table-actual-input {
+  -moz-appearance: textfield;
+}
+.table-actual-input:focus {
+  border-color: #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
 </style>
