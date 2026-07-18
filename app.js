@@ -1479,7 +1479,7 @@ function showDocViewModal(docId) {
     $('doc-view-btn-share').style.display = 'inline-flex';
     $('doc-view-btn-replace').style.display = 'inline-flex';
   } else {
-    iframe.src = '';
+    iframe.src = 'about:blank';
     iframe.style.display = 'none';
     fallback.style.display = 'block';
     
@@ -1504,14 +1504,14 @@ function setupDocViewModalEvents() {
   document.querySelectorAll('[data-close="doc-view-modal"]').forEach(btn => {
     btn.addEventListener('click', () => {
       $('doc-view-modal').classList.remove('show');
-      $('doc-view-iframe').src = '';
+      $('doc-view-iframe').src = 'about:blank';
     });
   });
   
   $('doc-view-modal').addEventListener('click', e => {
     if (e.target === $('doc-view-modal')) {
       $('doc-view-modal').classList.remove('show');
-      $('doc-view-iframe').src = '';
+      $('doc-view-iframe').src = 'about:blank';
     }
   });
   
@@ -1537,7 +1537,7 @@ function setupDocViewModalEvents() {
   $('doc-view-btn-edit').addEventListener('click', () => {
     const docId = currentViewingDocId;
     $('doc-view-modal').classList.remove('show');
-    $('doc-view-iframe').src = '';
+    $('doc-view-iframe').src = 'about:blank';
     openDocModal(docId);
   });
   
@@ -1596,7 +1596,7 @@ function setupDocViewModalEvents() {
     const docId = currentViewingDocId;
     if (confirm('Bạn có chắc chắn muốn xoá hồ sơ tài liệu này?')) {
       $('doc-view-modal').classList.remove('show');
-      $('doc-view-iframe').src = '';
+      $('doc-view-iframe').src = 'about:blank';
       
       showLoading();
       try {
