@@ -1151,7 +1151,7 @@ function renderListView(tasks) {
       <td>${plan}</td>
       <td><input type="number" class="table-actual-input" value="${actual}" data-id="${task.id}" min="0" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.9rem; font-weight: 500; outline: none; transition: all 0.2s;"></td>
       <td class="ratio-cell"><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
-      <td><textarea class="table-note-textarea" data-id="${task.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: vertical; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${task.notes || ''}</textarea></td>
+      <td><textarea class="table-note-textarea" data-id="${task.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: none; overflow-y: hidden; min-height: 34px; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${task.notes || ''}</textarea></td>
       <td>${attachmentsHtml}</td>
       <td class="action-cell">
         <button class="edit-task-btn"><i class="fas fa-edit"></i></button>
@@ -1194,6 +1194,11 @@ function renderListView(tasks) {
   
   // Sau khi render, gắn sự kiện cho các tệp đính kèm
   attachViewableClickHandler();
+
+  // Tự động căn chỉnh độ cao các ô ghi chú
+  setTimeout(() => {
+    document.querySelectorAll('.table-note-textarea').forEach(autoResizeTextarea);
+  }, 50);
 }
 
 // Hàm gắn sự kiện click cho các tệp đính kèm trong bảng
@@ -1992,6 +1997,13 @@ document.addEventListener('DOMContentLoaded', () => {
           loadData(true);
         })
         .updateTask(task);
+    }
+  });
+
+  // Tự động điều chỉnh độ cao của ghi chú khi gõ
+  document.addEventListener('input', e => {
+    if (e.target.classList.contains('table-note-textarea')) {
+      autoResizeTextarea(e.target);
     }
   });
 
@@ -5162,5 +5174,12 @@ function setupDocViewModalEvents() {
       }
     }
   });
+}
+
+// Tự động điều chỉnh độ cao của textarea theo nội dung
+function autoResizeTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 </script>

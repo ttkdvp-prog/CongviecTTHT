@@ -160,7 +160,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // Tự động điều chỉnh độ cao của ghi chú khi gõ
+  document.addEventListener('input', e => {
+    if (e.target.classList.contains('table-note-textarea')) {
+      autoResizeTextarea(e.target);
+    }
+  });
 });
+
+// Tự động điều chỉnh độ cao của textarea theo nội dung
+function autoResizeTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
 
 /* ===== Loading ===== */
 function showLoading() { loadingBar.className = 'loading-bar active'; }
@@ -380,7 +394,7 @@ function initDragDrop() {
 function renderListView(tasks) {
   const list = tasks || allTasks;
   const tbody = $('task-table-body');
-  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
+  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="12" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
     const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
     const p = t.progress || 0;
@@ -401,13 +415,18 @@ function renderListView(tasks) {
       <td>${plan}</td>
       <td><input type="number" class="table-actual-input" value="${actual}" data-id="${t.id}" min="0" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.9rem; font-weight: 500; outline: none; transition: all 0.2s;"></td>
       <td class="ratio-cell"><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
-      <td><textarea class="table-note-textarea" data-id="${t.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: vertical; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${t.notes || ''}</textarea></td>
+      <td><textarea class="table-note-textarea" data-id="${t.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: none; overflow-y: hidden; min-height: 34px; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${t.notes || ''}</textarea></td>
       <td><div class="table-actions">
         <button class="btn-edit" title="Sửa" onclick="editTask('${t.id}')"><i class="fas fa-pen"></i></button>
         <button class="btn-del" title="Xóa" onclick="delTask('${t.id}')"><i class="fas fa-trash"></i></button>
       </div></td>
     </tr>`;
   }).join('');
+  
+  // Tự động căn chỉnh độ cao các ô ghi chú
+  setTimeout(() => {
+    document.querySelectorAll('.table-note-textarea').forEach(autoResizeTextarea);
+  }, 50);
 }
 
 /* ===== Users View ===== */
