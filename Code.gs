@@ -8,7 +8,7 @@ function doGet(e) {
   // Nếu không => trả về HTML (web app mode)
   return HtmlService.createTemplateFromFile('Index')
     .evaluate()
-    .setTitle('Quản Lý Công Việc')
+    .setTitle('Quản lý công việc TTHT')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .setFaviconUrl("https://cdn-icons-png.flaticon.com/512/2098/2098402.png");
