@@ -1424,8 +1424,10 @@ function uploadFileToDrive(base64Data, fileName, mimeType) {
   }
 }
 
-// Hàm chạy thử để kích hoạt hộp thoại cấp quyền Google Drive
+// Hàm chạy thử để kích hoạt hộp thoại cấp quyền Google Drive (cả quyền đọc và ghi)
 function triggerDriveAuth() {
-  DriveApp.getRootFolder();
-  Logger.log("Đã kích hoạt quyền thành công!");
+  const folder = DriveApp.createFolder("TTHT_Auth_Test_Folder");
+  // Xoá thư mục test vừa tạo ngay lập tức
+  folder.setTrashed(true);
+  Logger.log("Đã kích hoạt đủ quyền đọc và ghi thành công!");
 }
