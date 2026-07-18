@@ -729,35 +729,31 @@ function addTask(taskData) {
     
     // Thêm công việc con
     if (taskData.subtasks && taskData.subtasks.length > 0) {
-      taskData.subtasks.forEach((subtask, index) => {
-        const subtaskId = `subtask-${taskId}-${index}`;
-        sheets.subtasks.appendRow([
-          subtaskId,
-          taskId,
-          subtask.text,
-          subtask.completed ? "true" : "false"
-        ]);
-      });
+      const subtaskRows = taskData.subtasks.map((subtask, index) => [
+        `subtask-${taskId}-${index}`,
+        taskId,
+        subtask.text,
+        subtask.completed ? "true" : "false"
+      ]);
+      const lastRow = sheets.subtasks.getLastRow();
+      sheets.subtasks.getRange(lastRow + 1, 1, subtaskRows.length, 4).setValues(subtaskRows);
     }
     
     // Thêm người phụ trách
     if (taskData.assignees && taskData.assignees.length > 0) {
-      // Lấy thông tin người dùng từ sheet Users
-      const ss = getSs();
-      const usersSheet = ss.getSheetByName("Users");
-      const usersData = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 3).getValues();
+      const allUsers = getUsers();
       const usersMap = {};
-      
-      usersData.forEach(row => {
-        usersMap[row[0]] = {
-          name: row[1],
-          initials: row[2]
+      allUsers.forEach(user => {
+        usersMap[user.id] = {
+          name: user.name,
+          initials: user.initials
         };
       });
       
+      const assigneeRows = [];
       taskData.assignees.forEach(assigneeId => {
         if (usersMap[assigneeId]) {
-          sheets.assignees.appendRow([
+          assigneeRows.push([
             taskId,
             assigneeId,
             usersMap[assigneeId].name,
@@ -765,18 +761,23 @@ function addTask(taskData) {
           ]);
         }
       });
+      
+      if (assigneeRows.length > 0) {
+        const lastRow = sheets.assignees.getLastRow();
+        sheets.assignees.getRange(lastRow + 1, 1, assigneeRows.length, 4).setValues(assigneeRows);
+      }
     }
     
     // Thêm tệp đính kèm
     if (taskData.attachments && taskData.attachments.length > 0) {
-      taskData.attachments.forEach(attachment => {
-        sheets.attachments.appendRow([
-          taskId,
-          attachment.name,
-          attachment.type,
-          attachment.url
-        ]);
-      });
+      const attachmentRows = taskData.attachments.map(attachment => [
+        taskId,
+        attachment.name,
+        attachment.type,
+        attachment.url
+      ]);
+      const lastRow = sheets.attachments.getLastRow();
+      sheets.attachments.getRange(lastRow + 1, 1, attachmentRows.length, 4).setValues(attachmentRows);
     }
     
     return { 
@@ -867,18 +868,7 @@ function updateTask(taskData) {
       }
     }
 
-    // Cập nhật thông tin công việc
-    sheets.tasks.getRange(taskRowIndex, 2).setValue(taskData.title);
-    sheets.tasks.getRange(taskRowIndex, 3).setValue(taskData.description || "");
-    sheets.tasks.getRange(taskRowIndex, 4).setValue(assigneeIds);
-    sheets.tasks.getRange(taskRowIndex, 5).setValue(assigneeNames);
-    sheets.tasks.getRange(taskRowIndex, 6).setValue(assigneeTeams);
-    sheets.tasks.getRange(taskRowIndex, 7).setValue(taskData.status || "inprogress");
-    sheets.tasks.getRange(taskRowIndex, 8).setValue(taskData.priority || "medium");
-    sheets.tasks.getRange(taskRowIndex, 9).setValue(startDate);
-    sheets.tasks.getRange(taskRowIndex, 10).setValue(dueDate);
-    
-    // Tính toán và cập nhật tiến độ
+    // Tính toán tiến độ
     let progress = 0;
     if (taskData.subtasks && taskData.subtasks.length > 0) {
       const completed = taskData.subtasks.filter(sub => sub.completed).length;
@@ -888,68 +878,54 @@ function updateTask(taskData) {
     } else if (taskData.status === "cancelled") {
       progress = 0;
     }
-    
-    sheets.tasks.getRange(taskRowIndex, 11).setValue(progress.toString());
-    
-    // Cập nhật Kế hoạch & Thực hiện & Tỷ lệ
-    sheets.tasks.getRange(taskRowIndex, 12).setValue(taskData.planValue !== undefined ? Number(taskData.planValue) : 0);
-    sheets.tasks.getRange(taskRowIndex, 13).setValue(taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0);
-    sheets.tasks.getRange(taskRowIndex, 14).setValue(`=IF(L${taskRowIndex}>0; M${taskRowIndex}/L${taskRowIndex}; 0)`);
-    sheets.tasks.getRange(taskRowIndex, 15).setValue(taskData.notes || "");
+
+    // Cập nhật thông tin công việc bằng 1 lệnh duy nhất (Cột 2 đến Cột 15 = 14 cột)
+    sheets.tasks.getRange(taskRowIndex, 2, 1, 14).setValues([[
+      taskData.title,
+      taskData.description || "",
+      assigneeIds,
+      assigneeNames,
+      assigneeTeams,
+      taskData.status || "inprogress",
+      taskData.priority || "medium",
+      startDate,
+      dueDate,
+      progress.toString(),
+      taskData.planValue !== undefined ? Number(taskData.planValue) : 0,
+      taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0,
+      `=IF(L${taskRowIndex}>0; M${taskRowIndex}/L${taskRowIndex}; 0)`,
+      taskData.notes || ""
+    ]]);
     
     // Xóa công việc con cũ và thêm công việc con mới
-    const subtasksSheet = sheets.subtasks;
-    const subtasksData = subtasksSheet.getDataRange().getValues();
-    
-    // Tìm và xóa các công việc con hiện tại
-    for (let i = subtasksData.length - 1; i >= 1; i--) {
-      if (subtasksData[i][1] === taskId) {
-        subtasksSheet.deleteRow(i + 1);
-      }
-    }
-    
-    // Thêm công việc con mới
+    deleteRowsByTaskId(sheets.subtasks, taskId, 1);
     if (taskData.subtasks && taskData.subtasks.length > 0) {
-      taskData.subtasks.forEach((subtask, index) => {
-        const subtaskId = subtask.id || `subtask-${taskId}-${index}`;
-        subtasksSheet.appendRow([
-          subtaskId,
-          taskId,
-          subtask.text,
-          subtask.completed ? "true" : "false"
-        ]);
-      });
+      const subtaskRows = taskData.subtasks.map((subtask, index) => [
+        subtask.id || `subtask-${taskId}-${index}`,
+        taskId,
+        subtask.text,
+        subtask.completed ? "true" : "false"
+      ]);
+      const lastRow = sheets.subtasks.getLastRow();
+      sheets.subtasks.getRange(lastRow + 1, 1, subtaskRows.length, 4).setValues(subtaskRows);
     }
     
     // Xóa người phụ trách cũ và thêm người mới
-    const assigneesSheet = sheets.assignees;
-    const assigneesData = assigneesSheet.getDataRange().getValues();
-    
-    // Tìm và xóa các người phụ trách hiện tại
-    for (let i = assigneesData.length - 1; i >= 1; i--) {
-      if (assigneesData[i][0] === taskId) {
-        assigneesSheet.deleteRow(i + 1);
-      }
-    }
-    
-    // Thêm người phụ trách mới
+    deleteRowsByTaskId(sheets.assignees, taskId, 0);
     if (taskData.assignees && taskData.assignees.length > 0) {
-      // Lấy thông tin người dùng từ sheet Users
-      const ss = getSs();
-      const usersSheet = ss.getSheetByName("Users");
-      const usersData = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 3).getValues();
+      const allUsers = getUsers();
       const usersMap = {};
-      
-      usersData.forEach(row => {
-        usersMap[row[0]] = {
-          name: row[1],
-          initials: row[2]
+      allUsers.forEach(user => {
+        usersMap[user.id] = {
+          name: user.name,
+          initials: user.initials
         };
       });
       
+      const assigneeRows = [];
       taskData.assignees.forEach(assigneeId => {
         if (usersMap[assigneeId]) {
-          assigneesSheet.appendRow([
+          assigneeRows.push([
             taskId,
             assigneeId,
             usersMap[assigneeId].name,
@@ -957,29 +933,24 @@ function updateTask(taskData) {
           ]);
         }
       });
-    }
-    
-    // Xóa tệp đính kèm cũ và thêm tệp mới
-    const attachmentsSheet = sheets.attachments;
-    const attachmentsData = attachmentsSheet.getDataRange().getValues();
-    
-    // Tìm và xóa các tệp đính kèm hiện tại
-    for (let i = attachmentsData.length - 1; i >= 1; i--) {
-      if (attachmentsData[i][0] === taskId) {
-        attachmentsSheet.deleteRow(i + 1);
+      
+      if (assigneeRows.length > 0) {
+        const lastRow = sheets.assignees.getLastRow();
+        sheets.assignees.getRange(lastRow + 1, 1, assigneeRows.length, 4).setValues(assigneeRows);
       }
     }
     
-    // Thêm tệp đính kèm mới
+    // Xóa tệp đính kèm cũ và thêm tệp mới
+    deleteRowsByTaskId(sheets.attachments, taskId, 0);
     if (taskData.attachments && taskData.attachments.length > 0) {
-      taskData.attachments.forEach(attachment => {
-        attachmentsSheet.appendRow([
-          taskId,
-          attachment.name,
-          attachment.type,
-          attachment.url
-        ]);
-      });
+      const attachmentRows = taskData.attachments.map(attachment => [
+        taskId,
+        attachment.name,
+        attachment.type,
+        attachment.url
+      ]);
+      const lastRow = sheets.attachments.getLastRow();
+      sheets.attachments.getRange(lastRow + 1, 1, attachmentRows.length, 4).setValues(attachmentRows);
     }
     
     return { 
@@ -992,6 +963,29 @@ function updateTask(taskData) {
       success: false, 
       message: "Có lỗi xảy ra: " + e.toString() 
     };
+  }
+}
+
+// Hàm phụ trợ xóa các dòng khớp taskId để tối ưu hóa hiệu năng
+function deleteRowsByTaskId(sheet, taskId, taskIdColumnIndex) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return; // Chỉ có tiêu đề hoặc rỗng
+  
+  const data = sheet.getRange(1, 1, lastRow, sheet.getLastColumn()).getValues();
+  const newRows = [];
+  let hasDeleted = false;
+  
+  for (let i = 0; i < data.length; i++) {
+    if (i === 0 || data[i][taskIdColumnIndex] !== taskId) {
+      newRows.push(data[i]);
+    } else {
+      hasDeleted = true;
+    }
+  }
+  
+  if (hasDeleted) {
+    sheet.clearContents();
+    sheet.getRange(1, 1, newRows.length, newRows[0].length).setValues(newRows);
   }
 }
 
