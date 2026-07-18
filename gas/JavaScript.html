@@ -1119,6 +1119,11 @@ function renderListView(tasks) {
       progressBarClass = 'cancelled';
     }
     
+    // Tính tỷ lệ kế hoạch/thực hiện
+    const plan = task.planValue || 0;
+    const actual = task.actualValue || 0;
+    const ratio = plan > 0 ? Math.round((actual / plan) * 100) + '%' : '—';
+
     row.innerHTML = `
       <td>${task.id.replace('task-', '')}</td>
       <td>
@@ -1141,6 +1146,9 @@ function renderListView(tasks) {
           <span>${task.progress || 0}%</span>
         </div>
       </td>
+      <td>${plan}</td>
+      <td>${actual}</td>
+      <td><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
       <td>${attachmentsHtml}</td>
       <td class="action-cell">
         <button class="edit-task-btn"><i class="fas fa-edit"></i></button>
@@ -1170,7 +1178,7 @@ function renderListView(tasks) {
       
       subtaskRow.innerHTML = `
         <td></td>
-        <td colspan="10">
+        <td colspan="13">
           <div class="subtasks-table">
             ${subtasksHtml}
           </div>

@@ -329,10 +329,16 @@ function initDragDrop() {
 function renderListView(tasks) {
   const list = tasks || allTasks;
   const tbody = $('task-table-body');
-  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
+  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
     const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
     const p = t.progress || 0;
+    
+    // Tính tỷ lệ thực hiện / kế hoạch
+    const plan = t.planValue || 0;
+    const actual = t.actualValue || 0;
+    const ratio = plan > 0 ? Math.round((actual / plan) * 100) + '%' : '—';
+    
     return `<tr>
       <td><strong>${t.title}</strong></td>
       <td><span class="badge badge-${t.priority}">${priorityText(t.priority)}</span></td>
@@ -341,6 +347,9 @@ function renderListView(tasks) {
       <td>${fmtDate(t.startDate)}</td>
       <td>${fmtDate(t.dueDate)}</td>
       <td><div class="progress-sm"><div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><span>${p}%</span></div></td>
+      <td>${plan}</td>
+      <td>${actual}</td>
+      <td><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
       <td><div class="table-actions">
         <button class="btn-edit" title="Sửa" onclick="editTask('${t.id}')"><i class="fas fa-pen"></i></button>
         <button class="btn-del" title="Xóa" onclick="delTask('${t.id}')"><i class="fas fa-trash"></i></button>
