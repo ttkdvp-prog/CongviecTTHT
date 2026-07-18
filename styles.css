@@ -230,8 +230,8 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
 .assignee-team-filter,.assignee-search-filter{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);flex:1;min-width:180px;transition:var(--transition)}
 .assignee-team-filter:focus-within,.assignee-search-filter:focus-within{border-color:var(--accent);background:rgba(0,196,140,.04);box-shadow:0 0 0 2px rgba(0,196,140,.1)}
 .assignee-team-filter i,.assignee-search-filter i{color:var(--text3);font-size:.8rem;flex-shrink:0}
-.assignee-team-filter select,.assignee-search-filter input{background:transparent;border:none;outline:none;color:var(--text1);font-size:.85rem;font-family:inherit;width:100%;cursor:pointer}
-.assignee-team-filter select option{background:var(--surface);color:var(--text1)}
+.assignee-team-filter select,.assignee-search-filter input{background:transparent;border:none;outline:none;color:var(--text);font-size:.85rem;font-family:inherit;width:100%;cursor:pointer}
+.assignee-team-filter select option{background:var(--bg2) !important;color:var(--text) !important}
 .assignee-search-filter input::placeholder{color:var(--text3)}
 .assignee-picker-divider{width:100%;display:flex;align-items:center;gap:10px;margin:6px 0 2px}
 .assignee-picker-divider::before,.assignee-picker-divider::after{content:'';flex:1;height:1px;background:var(--glass-border)}

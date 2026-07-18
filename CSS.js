@@ -2850,4 +2850,9 @@ tr.deleting {
   background: rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
+
+.assignee-team-filter select option {
+  background-color: var(--bg2) !important;
+  color: var(--text) !important;
+}
 </style>
