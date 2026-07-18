@@ -25,6 +25,7 @@ const api = {
 let allTasks = [];
 let users = [];
 let allTeams = [];
+let allDocuments = [];
 let currentGanttMonth = new Date().getMonth();
 let currentGanttYear = new Date().getFullYear();
 
@@ -83,6 +84,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupUserForm();
   setupSearch();
   setupFilters();
+  setupDocForm();
+  setupDocFilters();
   $('sidebar-toggle').addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
     sidebar.classList.toggle('mobile-open');
@@ -90,6 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
   $('refresh-btn').addEventListener('click', refreshData);
   $('add-task-btn').addEventListener('click', () => openTaskModal());
   $('add-user-btn').addEventListener('click', () => openUserModal());
+  $('add-doc-btn').addEventListener('click', () => openDocModal());
+  $('doc-refresh-btn').addEventListener('click', refreshDocData);
   $('add-subtask-btn').addEventListener('click', addSubtaskInput);
   $('subtask-input').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addSubtaskInput(); } });
   $('global-team-filter').addEventListener('change', filterAndRender);
@@ -142,14 +147,16 @@ function setupNavigation() {
 async function loadAllData() {
   showLoading();
   try {
-    const [tasks, usersData, teamsData] = await Promise.all([
+    const [tasks, usersData, teamsData, docsData] = await Promise.all([
       api.get('getTasks'),
       api.get('getUsers'),
-      api.get('getTeams')
+      api.get('getTeams'),
+      api.get('getDocuments')
     ]);
     allTasks = Array.isArray(tasks) ? tasks : [];
     users = Array.isArray(usersData) ? usersData : [];
     allTeams = Array.isArray(teamsData) ? teamsData : [];
+    allDocuments = Array.isArray(docsData) ? docsData : [];
     renderAll();
     toast('Dữ liệu đã tải thành công!');
   } catch(e) {
@@ -173,10 +180,12 @@ function renderAll() {
   renderListView();
   renderUsersView();
   renderGanttView();
+  renderDocumentsView();
   populateAssigneePicker();
   populateFilterDropdowns();
   populateTeamFilter();
   populateModalTeamFilter();
+  populateDocFilterOptions();
 }
 
 /* ===== Helpers ===== */
@@ -1009,3 +1018,406 @@ function navigateGanttMonth(direction) {
   currentGanttYear = newYear;
   renderGanttView();
 }
+
+// ==================== FRONTEND LOGIC: QUẢN LÝ TÀI LIỆU ====================
+
+// Render bảng danh sách tài liệu
+function renderDocumentsView(docs) {
+  const list = docs || allDocuments;
+  const tbody = $('doc-table-body');
+  if (!tbody) return;
+  
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-cell"><i class="fas fa-inbox"></i> Không có tài liệu nào</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = '';
+  list.forEach((doc, idx) => {
+    const tr = document.createElement('tr');
+    
+    // Tình trạng badge
+    let badgeClass = 'badge-doc-active';
+    if (doc.status === 'Hết hiệu lực') badgeClass = 'badge-doc-expired';
+    else if (doc.status === 'Tạm ngưng') badgeClass = 'badge-doc-suspended';
+    else if (doc.status === 'Đang soạn thảo') badgeClass = 'badge-doc-draft';
+    
+    const statusHtml = `<span class="badge ${badgeClass}">${doc.status || 'Đang hiệu lực'}</span>`;
+    
+    // File attachment link
+    let fileHtml = '—';
+    if (doc.fileUrl && doc.fileUrl !== '#' && doc.fileUrl !== '') {
+      fileHtml = `<a href="${doc.fileUrl}" target="_blank" class="doc-link" title="${doc.fileName || 'Xem tệp'}">
+        <i class="fas fa-file-pdf"></i> ${doc.fileName || 'Tệp đính kèm'}
+      </a>`;
+    } else if (doc.fileName) {
+      fileHtml = `<span class="text-muted"><i class="fas fa-file"></i> ${doc.fileName}</span>`;
+    }
+    
+    // Currency format
+    const fmtCurrency = (val) => {
+      if (!val) return '0 đ';
+      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val).replace('₫', 'đ');
+    };
+    
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td><strong>${doc.docNumber || '—'}</strong></td>
+      <td style="white-space: normal; min-width: 250px; font-weight: 500; color: var(--text);">${doc.title}</td>
+      <td><span style="background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);padding:2px 8px;border-radius:12px;font-size:0.8rem;">${doc.category || 'Chưa phân loại'}</span></td>
+      <td><span style="color:var(--text2);font-size:0.85rem;">${doc.department || '—'}</span></td>
+      <td style="font-weight: 600; color: var(--accent);">${fmtCurrency(doc.contractValue)}</td>
+      <td>${statusHtml}</td>
+      <td><span style="font-size:0.85rem;color:var(--text2);"><i class="far fa-calendar-alt"></i> ${fmtDate(doc.endDate)}</span></td>
+      <td>
+        <div class="doc-actions">
+          ${doc.fileUrl ? `<a href="${doc.fileUrl}" target="_blank" class="btn-view" title="Xem tệp"><i class="fas fa-eye"></i></a>` : ''}
+          <button class="btn-edit" onclick="openDocModal('${doc.id}')" title="Sửa"><i class="fas fa-pen"></i></button>
+          <button class="btn-del" onclick="deleteDocRecord('${doc.id}')" title="Xoá"><i class="fas fa-trash-can"></i></button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// Populate phòng ban cho modal
+function populateDocDepartmentSelect() {
+  const select = $('doc-department');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Chọn phòng ban --</option>';
+  allTeams.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    select.appendChild(opt);
+  });
+}
+
+// Reset/Mở modal tài liệu
+function openDocModal(docId) {
+  const isEdit = !!docId;
+  $('doc-modal-title').innerHTML = isEdit ? '<i class="fas fa-pen-to-square"></i> Cập nhật hồ sơ' : '<i class="fas fa-plus-circle"></i> Thêm hồ sơ mới';
+  $('doc-form').reset();
+  $('doc-id').value = '';
+  $('doc-file-status').textContent = 'Chưa chọn tệp';
+  $('doc-file-status').className = 'file-status';
+  $('doc-file-clear-btn').style.display = 'none';
+  $('doc-file-url').value = '';
+  $('doc-file-name').value = '';
+  
+  populateDocDepartmentSelect();
+  
+  if (isEdit) {
+    const doc = allDocuments.find(d => d.id === docId);
+    if (doc) {
+      $('doc-id').value = doc.id;
+      $('doc-title').value = doc.title || '';
+      $('doc-number').value = doc.docNumber || '';
+      $('doc-category').value = doc.category || '';
+      $('doc-department').value = doc.department || '';
+      $('doc-status').value = doc.status || 'Đang hiệu lực';
+      $('doc-issue-date').value = toInputDate(doc.issueDate);
+      $('doc-end-date').value = toInputDate(doc.endDate);
+      $('doc-project').value = doc.project || '';
+      $('doc-supplier').value = doc.supplier || '';
+      $('doc-contract-value').value = doc.contractValue || '';
+      $('doc-actual-value').value = doc.actualValue || '';
+      
+      const contractVal = Number(doc.contractValue) || 0;
+      const actualVal = Number(doc.actualValue) || 0;
+      const diffVal = contractVal - actualVal;
+      $('doc-diff-value').value = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(diffVal).replace('₫', 'đ');
+      
+      if (doc.fileUrl && doc.fileUrl !== '') {
+        $('doc-file-url').value = doc.fileUrl;
+        $('doc-file-name').value = doc.fileName || '';
+        $('doc-file-status').textContent = 'Đã đính kèm: ' + (doc.fileName || 'Tệp đính kèm');
+        $('doc-file-status').className = 'file-status uploaded';
+        $('doc-file-clear-btn').style.display = 'inline-flex';
+      }
+      $('doc-desc').value = doc.description || '';
+    }
+  }
+  
+  $('doc-modal').classList.add('show');
+}
+
+// Khởi tạo các sự kiện cho form tài liệu
+function setupDocForm() {
+  const form = $('doc-form');
+  if (!form) return;
+  
+  // Tính chênh lệch động
+  const calcDiff = () => {
+    const contract = Number($('doc-contract-value').value) || 0;
+    const actual = Number($('doc-actual-value').value) || 0;
+    const diff = contract - actual;
+    $('doc-diff-value').value = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(diff).replace('₫', 'đ');
+  };
+  
+  $('doc-contract-value').addEventListener('input', calcDiff);
+  $('doc-actual-value').addEventListener('input', calcDiff);
+  
+  // Kích hoạt nút chọn tệp
+  $('doc-file-select-btn').addEventListener('click', () => {
+    $('doc-file-input').click();
+  });
+  
+  // Xoá tệp đính kèm
+  $('doc-file-clear-btn').addEventListener('click', () => {
+    $('doc-file-input').value = '';
+    $('doc-file-url').value = '';
+    $('doc-file-name').value = '';
+    $('doc-file-status').textContent = 'Chưa chọn tệp';
+    $('doc-file-status').className = 'file-status';
+    $('doc-file-clear-btn').style.display = 'none';
+  });
+  
+  // Xử lý khi chọn file và tải lên Drive
+  $('doc-file-input').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    $('doc-file-status').textContent = 'Đang tải lên...';
+    $('doc-file-status').className = 'file-status';
+    
+    const reader = new FileReader();
+    reader.onload = async function(evt) {
+      const base64Data = evt.target.result;
+      try {
+        const result = await api.post('uploadFile', {
+          base64Data: base64Data,
+          fileName: file.name,
+          mimeType: file.type
+        });
+        
+        if (result && result.success !== false && result.url) {
+          $('doc-file-url').value = result.url;
+          $('doc-file-name').value = result.name || file.name;
+          $('doc-file-status').textContent = 'Đã tải lên: ' + file.name;
+          $('doc-file-status').className = 'file-status uploaded';
+          $('doc-file-clear-btn').style.display = 'inline-flex';
+          toast('Tải tệp lên thành công!');
+        } else {
+          $('doc-file-status').textContent = 'Lỗi tải tệp';
+          $('doc-file-status').className = 'file-status error';
+          toast(result?.message || 'Lỗi khi tải tệp lên!', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        $('doc-file-status').textContent = 'Lỗi tải tệp';
+        $('doc-file-status').className = 'file-status error';
+        toast('Lỗi kết nối khi tải tệp!', 'error');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  // Submit Form lưu tài liệu
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('save-doc-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    
+    const docData = {
+      title: $('doc-title').value.trim(),
+      docNumber: $('doc-number').value.trim(),
+      category: $('doc-category').value.trim(),
+      department: $('doc-department').value,
+      status: $('doc-status').value,
+      issueDate: $('doc-issue-date').value ? fromInputDate($('doc-issue-date').value) : '',
+      endDate: $('doc-end-date').value ? fromInputDate($('doc-end-date').value) : '',
+      project: $('doc-project').value.trim(),
+      supplier: $('doc-supplier').value.trim(),
+      contractValue: Number($('doc-contract-value').value) || 0,
+      actualValue: Number($('doc-actual-value').value) || 0,
+      fileName: $('doc-file-name').value,
+      fileUrl: $('doc-file-url').value,
+      description: $('doc-desc').value.trim()
+    };
+    
+    const docId = $('doc-id').value;
+    try {
+      let result;
+      if (docId) {
+        docData.id = docId;
+        result = await api.post('updateDocument', { data: docData });
+      } else {
+        result = await api.post('addDocument', { data: docData });
+      }
+      
+      if (result && result.success !== false) {
+        toast(docId ? 'Đã cập nhật hồ sơ!' : 'Đã thêm hồ sơ mới!');
+        $('doc-modal').classList.remove('show');
+        await loadDocData();
+      } else {
+        toast(result?.message || 'Có lỗi xảy ra!', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      toast('Có lỗi xảy ra khi lưu!', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Lưu hồ sơ';
+    }
+  });
+}
+
+// Tải danh sách tài liệu
+async function loadDocData() {
+  showLoading();
+  try {
+    const docs = await api.get('getDocuments');
+    allDocuments = Array.isArray(docs) ? docs : [];
+    renderDocumentsView();
+    populateDocFilterOptions();
+  } catch (e) {
+    console.error(e);
+    toast('Không thể tải danh sách tài liệu!', 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+// Refresh tài liệu
+async function refreshDocData() {
+  const btn = $('doc-refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  await loadDocData();
+  if (btn) setTimeout(() => btn.classList.remove('spinning'), 600);
+}
+
+// Cấu hình sự kiện bộ lọc tìm kiếm tài liệu
+function setupDocFilters() {
+  const searchInput = $('doc-search-input');
+  const catFilter = $('doc-category-filter');
+  const teamFilter = $('doc-team-filter');
+  const statusFilter = $('doc-status-filter');
+  
+  const applyFilters = () => {
+    const kw = searchInput.value.toLowerCase().trim();
+    const cat = catFilter.value;
+    const team = teamFilter.value;
+    const status = statusFilter.value;
+    
+    const filtered = allDocuments.filter(doc => {
+      // Keyword
+      const matchKw = !kw || 
+        (doc.title && doc.title.toLowerCase().includes(kw)) ||
+        (doc.docNumber && doc.docNumber.toLowerCase().includes(kw)) ||
+        (doc.project && doc.project.toLowerCase().includes(kw)) ||
+        (doc.supplier && doc.supplier.toLowerCase().includes(kw)) ||
+        (doc.description && doc.description.toLowerCase().includes(kw));
+        
+      // Category
+      const matchCat = !cat || doc.category === cat;
+      // Department
+      const matchTeam = !team || doc.department === team;
+      // Status
+      const matchStatus = !status || doc.status === status;
+      
+      return matchKw && matchCat && matchTeam && matchStatus;
+    });
+    
+    renderDocumentsView(filtered);
+  };
+  
+  if (searchInput) searchInput.addEventListener('input', applyFilters);
+  if (catFilter) catFilter.addEventListener('change', applyFilters);
+  if (teamFilter) teamFilter.addEventListener('change', applyFilters);
+  if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+}
+
+// Đổ dữ liệu vào các dropdown bộ lọc và datalist hỗ trợ autocomplete
+function populateDocFilterOptions() {
+  const catFilter = $('doc-category-filter');
+  const teamFilter = $('doc-team-filter');
+  
+  if (catFilter) {
+    const cats = [...new Set(allDocuments.map(d => d.category).filter(c => c))];
+    catFilter.innerHTML = '<option value="">Tất cả danh mục</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      catFilter.appendChild(opt);
+    });
+    
+    // Cập nhật datalist trong form
+    const datalistCats = $('doc-categories-list');
+    if (datalistCats) {
+      datalistCats.innerHTML = '';
+      const defaultCats = ['Hợp đồng', 'Mẫu tham khảo', 'Thỏa thuận vị trí', 'Văn bản ủy quyền'];
+      const uniqueCats = [...new Set([...defaultCats, ...cats])];
+      uniqueCats.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        datalistCats.appendChild(opt);
+      });
+    }
+  }
+  
+  if (teamFilter) {
+    teamFilter.innerHTML = '<option value="">Tất cả phòng ban</option>';
+    allTeams.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t;
+      opt.textContent = t;
+      teamFilter.appendChild(opt);
+    });
+  }
+  
+  // Cập nhật datalist Dự án và NCC
+  const datalistProjs = $('doc-projects-list');
+  if (datalistProjs) {
+    const projs = [...new Set(allDocuments.map(d => d.project).filter(p => p))];
+    datalistProjs.innerHTML = '';
+    const defaultProjs = ['Dự án Hạ tầng', 'Dự án VNPT'];
+    const uniqueProjs = [...new Set([...defaultProjs, ...projs])];
+    uniqueProjs.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      datalistProjs.appendChild(opt);
+    });
+  }
+  
+  const datalistSups = $('doc-suppliers-list');
+  if (datalistSups) {
+    const sups = [...new Set(allDocuments.map(d => d.supplier).filter(s => s))];
+    datalistSups.innerHTML = '';
+    const defaultSups = ['VNPT', 'Viettel', 'FPT'];
+    const uniqueSups = [...new Set([...defaultSups, ...sups])];
+    uniqueSups.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      datalistSups.appendChild(opt);
+    });
+  }
+}
+
+// Xóa tài liệu hồ sơ
+async function deleteDocRecord(docId) {
+  if (confirm('Bạn có chắc chắn muốn xoá hồ sơ tài liệu này?')) {
+    showLoading();
+    try {
+      const result = await api.post('deleteDocument', { docId: docId });
+      if (result && result.success !== false) {
+        toast('Đã xoá tài liệu thành công!');
+        await loadDocData();
+      } else {
+        toast(result?.message || 'Có lỗi xảy ra khi xoá!', 'error');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Lỗi kết nối khi xoá!', 'error');
+    } finally {
+      hideLoading();
+    }
+  }
+}
+
+// Đăng ký toàn cục để gọi inline từ thuộc tính onclick
+window.openDocModal = openDocModal;
+window.deleteDocRecord = deleteDocRecord;

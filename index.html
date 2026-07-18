@@ -46,6 +46,10 @@
         <i class="fas fa-chart-gantt"></i>
         <span>Biểu đồ Gantt</span>
       </a>
+      <a href="#" class="nav-link" data-view="documents" id="nav-documents">
+        <i class="fas fa-file-invoice"></i>
+        <span>Quản lý tài liệu</span>
+      </a>
       <a href="#" class="nav-link" data-view="users" id="nav-users">
         <i class="fas fa-users-gear"></i>
         <span>Người dùng</span>
@@ -258,6 +262,59 @@
         <div class="empty-state"><i class="fas fa-users"></i><p>Đang tải danh sách người dùng...</p></div>
       </div>
     </section>
+
+    <!-- ==================== DOCUMENTS VIEW ==================== -->
+    <section class="view" id="documents-view">
+      <div class="documents-header glass">
+        <div class="documents-filters">
+          <div class="documents-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="doc-search-input" placeholder="Tìm kiếm tài liệu, số hồ sơ, dự án...">
+          </div>
+          <select id="doc-category-filter" class="documents-select">
+            <option value="">Tất cả danh mục</option>
+          </select>
+          <select id="doc-team-filter" class="documents-select">
+            <option value="">Tất cả phòng ban</option>
+          </select>
+          <select id="doc-status-filter" class="documents-select">
+            <option value="">Tất cả tình trạng</option>
+            <option value="Đang hiệu lực">Đang hiệu lực</option>
+            <option value="Hết hiệu lực">Hết hiệu lực</option>
+            <option value="Tạm ngưng">Tạm ngưng</option>
+            <option value="Đang soạn thảo">Đang soạn thảo</option>
+          </select>
+          <button class="btn-icon" id="doc-refresh-btn" title="Làm mới tài liệu">
+            <i class="fas fa-arrows-rotate"></i>
+          </button>
+        </div>
+        <button class="btn-primary" id="add-doc-btn">
+          <i class="fas fa-plus"></i>
+          <span>Thêm tài liệu</span>
+        </button>
+      </div>
+      
+      <div class="list-container glass">
+        <table class="data-table" id="doc-table">
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Số hồ sơ</th>
+              <th>Tên hồ sơ</th>
+              <th>Danh mục</th>
+              <th>Phòng ban</th>
+              <th>Giá trị HĐ</th>
+              <th>Tình trạng</th>
+              <th>Hạn hoàn thành</th>
+              <th>Tác vụ</th>
+            </tr>
+          </thead>
+          <tbody id="doc-table-body">
+            <tr><td colspan="9" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu tài liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <!-- ==================== TASK MODAL ==================== -->
@@ -360,6 +417,133 @@
           <div class="form-actions">
             <button type="button" class="btn-secondary" data-close="user-modal">Huỷ bỏ</button>
             <button type="submit" class="btn-primary" id="save-user-btn"><i class="fas fa-save"></i> Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DOCUMENT MODAL ==================== -->
+  <div class="modal-overlay" id="doc-modal">
+    <div class="modal glass-modal">
+      <div class="modal-header">
+        <h2 id="doc-modal-title"><i class="fas fa-file-invoice"></i> Thêm hồ sơ mới</h2>
+        <button class="btn-icon modal-close" data-close="doc-modal"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="doc-form">
+          <input type="hidden" id="doc-id">
+          <div class="form-group">
+            <label for="doc-title">Tên hồ sơ <span class="required">*</span></label>
+            <input type="text" id="doc-title" placeholder="Nhập tên hồ sơ..." required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="doc-number">Số hồ sơ</label>
+              <input type="text" id="doc-number" placeholder="Nhập số hồ sơ...">
+            </div>
+            <div class="form-group">
+              <label for="doc-category">Danh mục <span class="required">*</span></label>
+              <input type="text" id="doc-category" list="doc-categories-list" placeholder="Chọn hoặc nhập danh mục..." required>
+              <datalist id="doc-categories-list">
+                <option value="Hợp đồng">
+                <option value="Mẫu tham khảo">
+                <option value="Thỏa thuận vị trí">
+                <option value="Văn bản ủy quyền">
+              </datalist>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="doc-department">Phòng ban <span class="required">*</span></label>
+              <select id="doc-department" required>
+                <option value="">-- Chọn phòng ban --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="doc-status">Tình trạng</label>
+              <select id="doc-status">
+                <option value="Đang hiệu lực">Đang hiệu lực</option>
+                <option value="Hết hiệu lực">Hết hiệu lực</option>
+                <option value="Tạm ngưng">Tạm ngưng</option>
+                <option value="Đang soạn thảo">Đang soạn thảo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="doc-issue-date">Ngày ban hành</label>
+              <input type="date" id="doc-issue-date">
+            </div>
+            <div class="form-group">
+              <label for="doc-end-date">Ngày kết thúc</label>
+              <input type="date" id="doc-end-date">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="doc-project">Dự án</label>
+              <input type="text" id="doc-project" list="doc-projects-list" placeholder="Chọn hoặc nhập dự án...">
+              <datalist id="doc-projects-list">
+                <option value="Dự án Hạ tầng">
+                <option value="Dự án VNPT">
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="doc-supplier">Nhà cung cấp</label>
+              <input type="text" id="doc-supplier" list="doc-suppliers-list" placeholder="Chọn hoặc nhập nhà cung cấp...">
+              <datalist id="doc-suppliers-list">
+                <option value="VNPT">
+                <option value="Viettel">
+                <option value="FPT">
+              </datalist>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="doc-contract-value">Giá trị HĐ (VNĐ)</label>
+              <input type="number" id="doc-contract-value" placeholder="Nhập giá trị hợp đồng..." min="0">
+            </div>
+            <div class="form-group">
+              <label for="doc-actual-value">Giá trị thực hiện (VNĐ)</label>
+              <input type="number" id="doc-actual-value" placeholder="Nhập giá trị thực hiện..." min="0">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="doc-diff-value">Chênh lệch (Tự động)</label>
+            <input type="text" id="doc-diff-value" placeholder="Giá trị chênh lệch..." readonly style="opacity: 0.7; background: rgba(255,255,255,0.02)">
+          </div>
+
+          <div class="form-group">
+            <label>Tệp tin</label>
+            <div class="file-upload-wrapper">
+              <input type="file" id="doc-file-input" style="display: none;">
+              <button type="button" class="btn-file-select" id="doc-file-select-btn">
+                <i class="fas fa-cloud-arrow-up"></i> Chọn tệp
+              </button>
+              <span class="file-status" id="doc-file-status">Chưa chọn tệp</span>
+              <button type="button" class="btn-file-clear" id="doc-file-clear-btn" style="display: none;" title="Xóa tệp">
+                <i class="fas fa-circle-xmark"></i>
+              </button>
+            </div>
+            <input type="hidden" id="doc-file-url">
+            <input type="hidden" id="doc-file-name">
+          </div>
+
+          <div class="form-group">
+            <label for="doc-desc">Mô tả</label>
+            <textarea id="doc-desc" rows="3" placeholder="Mô tả chi tiết tài liệu..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" data-close="doc-modal">Huỷ bỏ</button>
+            <button type="submit" class="btn-primary" id="save-doc-btn"><i class="fas fa-save"></i> Lưu hồ sơ</button>
           </div>
         </form>
       </div>

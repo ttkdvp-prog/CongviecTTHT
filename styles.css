@@ -646,3 +646,228 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
   background: var(--bg2);
   color: var(--text);
 }
+
+/* ===== Documents View Styles ===== */
+.documents-header {
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.documents-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: 1;
+}
+
+.documents-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 220px;
+  flex: 1;
+}
+
+.documents-search i {
+  position: absolute;
+  left: 12px;
+  color: var(--text3);
+}
+
+.documents-search input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px 8px 36px;
+  color: var(--text);
+  width: 100%;
+  transition: var(--transition);
+}
+
+.documents-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 196, 140, 0.15);
+}
+
+.documents-select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 30px 8px 12px;
+  color: var(--text);
+  transition: var(--transition);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.documents-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 196, 140, 0.15);
+  outline: none;
+}
+
+.documents-select option {
+  background: var(--bg2);
+  color: var(--text);
+}
+
+/* Badges */
+.badge-doc-active {
+  background: rgba(0, 196, 140, 0.15);
+  color: #00c48c;
+}
+
+.badge-doc-expired {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+}
+
+.badge-doc-draft {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.badge-doc-suspended {
+  background: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+}
+
+/* File Upload Button styling */
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--glass-border);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.file-upload-wrapper:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
+}
+
+.btn-file-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-file-select:hover {
+  background: var(--glass-hover);
+  color: var(--text);
+}
+
+.file-status {
+  font-size: 0.85rem;
+  color: var(--text3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.file-status.uploaded {
+  color: #00c48c;
+  font-weight: 500;
+}
+
+.file-status.error {
+  color: var(--rose);
+}
+
+.btn-file-clear {
+  background: transparent;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.btn-file-clear:hover {
+  color: var(--rose);
+}
+
+.doc-link {
+  color: #0ea5e9;
+  font-weight: 500;
+  text-decoration: underline;
+  transition: var(--transition);
+}
+
+.doc-link:hover {
+  color: #38bdf8;
+}
+
+/* Document actions columns alignment */
+.doc-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.doc-actions button, .doc-actions a {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.doc-actions .btn-view {
+  background: rgba(0, 196, 140, 0.15);
+  color: #00c48c;
+}
+
+.doc-actions .btn-view:hover {
+  background: rgba(0, 196, 140, 0.3);
+}
+
+.doc-actions .btn-edit {
+  background: rgba(14, 165, 233, 0.15);
+  color: #0ea5e9;
+}
+
+.doc-actions .btn-edit:hover {
+  background: rgba(14, 165, 233, 0.3);
+}
+
+.doc-actions .btn-del {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+}
+
+.doc-actions .btn-del:hover {
+  background: rgba(244, 63, 94, 0.25);
+}

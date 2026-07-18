@@ -44,6 +44,7 @@
         <button class="view-btn active" data-view="kanban"><i class="fas fa-columns"></i> Kanban</button>
         <button class="view-btn" data-view="list"><i class="fas fa-list"></i> Danh Sách</button>
         <button class="view-btn" data-view="gantt"><i class="fas fa-chart-gantt"></i> Gantt</button>
+        <button class="view-btn" data-view="documents"><i class="fas fa-file-invoice"></i> Tài Liệu</button>
       </div>
     </div>
     
@@ -152,6 +153,59 @@
               <!-- Nội dung sẽ được thêm ở đây bằng JavaScript -->
             </div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Giao diện Tài liệu -->
+      <div id="documents-view" class="view-section" style="display: none; padding: 20px;">
+        <div class="documents-header glass" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div class="documents-filters" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1;">
+            <div class="documents-search" style="position: relative; display: flex; align-items: center; min-width: 220px; flex: 1;">
+              <i class="fas fa-search" style="position: absolute; left: 12px; color: #94a3b8;"></i>
+              <input type="text" id="doc-search-input" placeholder="Tìm kiếm tài liệu, số hồ sơ, dự án..." style="width: 100%; padding: 8px 12px 8px 36px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0;">
+            </div>
+            <select id="doc-category-filter" class="documents-select" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: #e2e8f0; cursor: pointer; min-width: 150px;">
+              <option value="">Tất cả danh mục</option>
+            </select>
+            <select id="doc-team-filter" class="documents-select" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: #e2e8f0; cursor: pointer; min-width: 150px;">
+              <option value="">Tất cả phòng ban</option>
+            </select>
+            <select id="doc-status-filter" class="documents-select" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: #e2e8f0; cursor: pointer; min-width: 150px;">
+              <option value="">Tất cả tình trạng</option>
+              <option value="Đang hiệu lực">Đang hiệu lực</option>
+              <option value="Hết hiệu lực">Hết hiệu lực</option>
+              <option value="Tạm ngưng">Tạm ngưng</option>
+              <option value="Đang soạn thảo">Đang soạn thảo</option>
+            </select>
+            <button class="btn-icon" id="doc-refresh-btn" title="Làm mới tài liệu" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <button class="btn-primary" id="add-doc-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; background: linear-gradient(135deg, #00c48c, #00a87a); color: #fff; font-weight: 600; border: none; cursor: pointer;">
+            <i class="fas fa-plus"></i>
+            <span>Thêm tài liệu</span>
+          </button>
+        </div>
+        
+        <div class="list-container glass" style="overflow-x: auto; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;">
+          <table class="data-table" id="doc-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">STT</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Số hồ sơ</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Tên hồ sơ</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Danh mục</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Phòng ban</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Giá trị HĐ</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Tình trạng</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Hạn hoàn thành</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Tác vụ</th>
+              </tr>
+            </thead>
+            <tbody id="doc-table-body" style="color: #e2e8f0;">
+              <tr><td colspan="9" class="empty-cell" style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-inbox"></i> Đang tải dữ liệu tài liệu...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -292,6 +346,133 @@
               </table>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== DOCUMENT MODAL ==================== -->
+    <div class="modal-overlay" id="doc-modal">
+      <div class="modal glass-modal" style="background: rgba(30, 41, 59, 0.95); max-width: 560px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); max-height: 85vh; overflow-y: auto; width: 90%; margin: 0 auto; top: 10%;">
+        <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+          <h2 id="doc-modal-title" style="font-size: 1.1rem; display: flex; align-items: center; gap: 8px; color: #e2e8f0; font-weight: 700;"><i class="fas fa-file-invoice"></i> Thêm hồ sơ mới</h2>
+          <button class="btn-icon modal-close" data-close="doc-modal" style="background: transparent; color: #94a3b8; font-size: 1.2rem; cursor: pointer; border: none; display: flex; align-items: center;"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 24px;">
+          <form id="doc-form">
+            <input type="hidden" id="doc-id">
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="doc-title" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Tên hồ sơ <span class="required" style="color: #f43f5e;">*</span></label>
+              <input type="text" id="doc-title" placeholder="Nhập tên hồ sơ..." required style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+            </div>
+            
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="doc-number" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Số hồ sơ</label>
+                <input type="text" id="doc-number" placeholder="Nhập số hồ sơ..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+              <div class="form-group">
+                <label for="doc-category" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Danh mục <span class="required" style="color: #f43f5e;">*</span></label>
+                <input type="text" id="doc-category" list="doc-categories-list-gas" placeholder="Chọn hoặc nhập danh mục..." required style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+                <datalist id="doc-categories-list-gas">
+                  <option value="Hợp đồng">
+                  <option value="Mẫu tham khảo">
+                  <option value="Thỏa thuận vị trí">
+                  <option value="Văn bản ủy quyền">
+                </datalist>
+              </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="doc-department" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Phòng ban <span class="required" style="color: #f43f5e;">*</span></label>
+                <select id="doc-department" required style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none; cursor: pointer;">
+                  <option value="">-- Chọn phòng ban --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="doc-status" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Tình trạng</label>
+                <select id="doc-status" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none; cursor: pointer;">
+                  <option value="Đang hiệu lực">Đang hiệu lực</option>
+                  <option value="Hết hiệu lực">Hết hiệu lực</option>
+                  <option value="Tạm ngưng">Tạm ngưng</option>
+                  <option value="Đang soạn thảo">Đang soạn thảo</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="doc-issue-date" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Ngày ban hành</label>
+                <input type="date" id="doc-issue-date" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+              <div class="form-group">
+                <label for="doc-end-date" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Ngày kết thúc</label>
+                <input type="date" id="doc-end-date" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="doc-project" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Dự án</label>
+                <input type="text" id="doc-project" list="doc-projects-list-gas" placeholder="Chọn hoặc nhập dự án..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+                <datalist id="doc-projects-list-gas">
+                  <option value="Dự án Hạ tầng">
+                  <option value="Dự án VNPT">
+                </datalist>
+              </div>
+              <div class="form-group">
+                <label for="doc-supplier" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Nhà cung cấp</label>
+                <input type="text" id="doc-supplier" list="doc-suppliers-list-gas" placeholder="Chọn hoặc nhập nhà cung cấp..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+                <datalist id="doc-suppliers-list-gas">
+                  <option value="VNPT">
+                  <option value="Viettel">
+                  <option value="FPT">
+                </datalist>
+              </div>
+            </div>
+
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div class="form-group">
+                <label for="doc-contract-value" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Giá trị HĐ (VNĐ)</label>
+                <input type="number" id="doc-contract-value" placeholder="Nhập giá trị hợp đồng..." min="0" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+              <div class="form-group">
+                <label for="doc-actual-value" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Giá trị thực hiện (VNĐ)</label>
+                <input type="number" id="doc-actual-value" placeholder="Nhập giá trị thực hiện..." min="0" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="doc-diff-value" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Chênh lệch (Tự động)</label>
+              <input type="text" id="doc-diff-value" placeholder="Giá trị chênh lệch..." readonly style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; opacity: 0.7; outline: none;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Tệp tin</label>
+              <div class="file-upload-wrapper" style="display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 10px;">
+                <input type="file" id="doc-file-input" style="display: none;">
+                <button type="button" class="btn-file-select" id="doc-file-select-btn" style="padding: 6px 12px; cursor: pointer; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; color: #94a3b8;">
+                  <i class="fas fa-cloud-arrow-up"></i> Chọn tệp
+                </button>
+                <span class="file-status" id="doc-file-status">Chưa chọn tệp</span>
+                <button type="button" class="btn-file-clear" id="doc-file-clear-btn" style="display: none; background: transparent; border: none; color: #64748b; cursor: pointer;" title="Xóa tệp">
+                  <i class="fas fa-circle-xmark"></i>
+                </button>
+              </div>
+              <input type="hidden" id="doc-file-url">
+              <input type="hidden" id="doc-file-name">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="doc-desc" style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 6px;">Mô tả</label>
+              <textarea id="doc-desc" rows="3" placeholder="Mô tả chi tiết tài liệu..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; resize: vertical; outline: none;"></textarea>
+            </div>
+
+            <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 8px;">
+              <button type="button" class="btn-secondary" data-close="doc-modal" style="padding: 9px 18px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; font-weight: 500; cursor: pointer;">Huỷ bỏ</button>
+              <button type="submit" class="btn-primary" id="save-doc-btn" style="padding: 9px 18px; border-radius: 10px; background: linear-gradient(135deg, #00c48c, #00a87a); border: none; color: #fff; font-weight: 600; cursor: pointer;"><i class="fas fa-save"></i> Lưu hồ sơ</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

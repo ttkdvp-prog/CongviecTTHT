@@ -70,6 +70,23 @@ function handleApiRequest(params) {
       case 'checkOverdue':
         result = { updated: checkOverdueTasks() };
         break;
+      case 'getDocuments':
+        result = getDocuments();
+        break;
+      case 'addDocument':
+        var docData = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = addDocument(docData);
+        break;
+      case 'updateDocument':
+        var docData2 = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = updateDocument(docData2);
+        break;
+      case 'deleteDocument':
+        result = deleteDocument(params.docId);
+        break;
+      case 'uploadFile':
+        result = uploadFileToDrive(params.base64Data, params.fileName, params.mimeType);
+        break;
       default:
         result = { success: false, message: "Action không hợp lệ: " + params.action };
     }
@@ -156,11 +173,23 @@ function setupSheets() {
       initializeSampleData();
     }
     
+    let documents = ss.getSheetByName("Documents");
+    if (!documents) {
+      documents = ss.insertSheet("Documents");
+      documents.appendRow([
+        "ID", "Số hồ sơ", "Tên hồ sơ", "Danh mục", "Phòng ban",
+        "Ngày ban hành", "Ngày kết thúc", "Dự án", "Nhà cung cấp",
+        "Tình trạng", "Giá trị HĐ", "Giá trị thực hiện", "Chênh lệch",
+        "File Name", "File URL", "Mô tả", "Ngày tạo"
+      ]);
+    }
+    
     return {
       tasks: tasks,
       subtasks: subtasks,
       assignees: assignees,
-      attachments: attachments
+      attachments: attachments,
+      documents: documents
     };
   } catch (e) {
     Logger.log("Lỗi khi thiết lập sheet: " + e.toString());
@@ -1175,5 +1204,222 @@ function filterTasks(filterOptions) {
   } catch (e) {
     Logger.log("Lỗi khi lọc công việc: " + e.toString());
     return [];
+  }
+}
+
+// ==================== QUẢN LÝ TÀI LIỆU ====================
+
+// Lấy danh sách tất cả tài liệu
+function getDocuments() {
+  try {
+    const ss = getSs();
+    let docSheet = ss.getSheetByName("Documents");
+    if (!docSheet) {
+      setupSheets();
+      docSheet = ss.getSheetByName("Documents");
+    }
+    const lastRow = docSheet.getLastRow();
+    if (lastRow <= 1) return [];
+    
+    const data = docSheet.getRange(2, 1, lastRow - 1, 17).getValues();
+    const documents = [];
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue;
+      documents.push({
+        id: String(row[0]),
+        docNumber: String(row[1]),
+        title: String(row[2]),
+        category: String(row[3]),
+        department: String(row[4]),
+        issueDate: String(row[5]),
+        endDate: String(row[6]),
+        project: String(row[7]),
+        supplier: String(row[8]),
+        status: String(row[9]),
+        contractValue: Number(row[10]) || 0,
+        actualValue: Number(row[11]) || 0,
+        diffValue: Number(row[12]) || 0,
+        fileName: String(row[13]),
+        fileUrl: String(row[14]),
+        description: String(row[15]),
+        createdAt: String(row[16])
+      });
+    }
+    return documents;
+  } catch (e) {
+    Logger.log("Lỗi lấy tài liệu: " + e.toString());
+    return [];
+  }
+}
+
+// Thêm tài liệu mới
+function addDocument(docData) {
+  try {
+    if (!docData.title) {
+      return { success: false, message: "Tên hồ sơ không được để trống" };
+    }
+    const ss = getSs();
+    let docSheet = ss.getSheetByName("Documents");
+    if (!docSheet) {
+      setupSheets();
+      docSheet = ss.getSheetByName("Documents");
+    }
+    
+    const now = new Date();
+    const formattedDate = now.getFullYear().toString().slice(-2) + 
+        ('0' + (now.getMonth() + 1)).slice(-2) + 
+        ('0' + now.getDate()).slice(-2) + 
+        ('0' + now.getHours()).slice(-2) + 
+        ('0' + now.getMinutes()).slice(-2) + 
+        ('0' + now.getSeconds()).slice(-2);
+    const docId = "doc-" + formattedDate;
+    
+    const contractVal = Number(docData.contractValue) || 0;
+    const actualVal = Number(docData.actualValue) || 0;
+    const diffVal = contractVal - actualVal;
+    
+    docSheet.appendRow([
+      docId,
+      docData.docNumber || "",
+      docData.title,
+      docData.category || "",
+      docData.department || "",
+      docData.issueDate || "",
+      docData.endDate || "",
+      docData.project || "",
+      docData.supplier || "",
+      docData.status || "Đang hiệu lực",
+      contractVal,
+      actualVal,
+      diffVal,
+      docData.fileName || "",
+      docData.fileUrl || "",
+      docData.description || "",
+      now.toISOString()
+    ]);
+    
+    return { success: true, message: "Thêm tài liệu thành công", docId: docId };
+  } catch (e) {
+    Logger.log("Lỗi thêm tài liệu: " + e.toString());
+    return { success: false, message: "Lỗi: " + e.toString() };
+  }
+}
+
+// Cập nhật tài liệu
+function updateDocument(docData) {
+  try {
+    if (!docData.id || !docData.title) {
+      return { success: false, message: "Thiếu ID hoặc Tên hồ sơ" };
+    }
+    const ss = getSs();
+    const docSheet = ss.getSheetByName("Documents");
+    if (!docSheet) {
+      return { success: false, message: "Không tìm thấy sheet Documents" };
+    }
+    
+    const lastRow = docSheet.getLastRow();
+    const data = docSheet.getRange(1, 1, lastRow, 1).getValues();
+    let rowIndex = -1;
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]) === docData.id) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return { success: false, message: "Không tìm thấy tài liệu" };
+    }
+    
+    const contractVal = Number(docData.contractValue) || 0;
+    const actualVal = Number(docData.actualValue) || 0;
+    const diffVal = contractVal - actualVal;
+    
+    docSheet.getRange(rowIndex, 2).setValue(docData.docNumber || "");
+    docSheet.getRange(rowIndex, 3).setValue(docData.title);
+    docSheet.getRange(rowIndex, 4).setValue(docData.category || "");
+    docSheet.getRange(rowIndex, 5).setValue(docData.department || "");
+    docSheet.getRange(rowIndex, 6).setValue(docData.issueDate || "");
+    docSheet.getRange(rowIndex, 7).setValue(docData.endDate || "");
+    docSheet.getRange(rowIndex, 8).setValue(docData.project || "");
+    docSheet.getRange(rowIndex, 9).setValue(docData.supplier || "");
+    docSheet.getRange(rowIndex, 10).setValue(docData.status || "Đang hiệu lực");
+    docSheet.getRange(rowIndex, 11).setValue(contractVal);
+    docSheet.getRange(rowIndex, 12).setValue(actualVal);
+    docSheet.getRange(rowIndex, 13).setValue(diffVal);
+    docSheet.getRange(rowIndex, 14).setValue(docData.fileName || "");
+    docSheet.getRange(rowIndex, 15).setValue(docData.fileUrl || "");
+    docSheet.getRange(rowIndex, 16).setValue(docData.description || "");
+    
+    return { success: true, message: "Cập nhật tài liệu thành công" };
+  } catch (e) {
+    Logger.log("Lỗi cập nhật tài liệu: " + e.toString());
+    return { success: false, message: "Lỗi: " + e.toString() };
+  }
+}
+
+// Xóa tài liệu
+function deleteDocument(docId) {
+  try {
+    if (!docId) {
+      return { success: false, message: "Thiếu ID tài liệu" };
+    }
+    const ss = getSs();
+    const docSheet = ss.getSheetByName("Documents");
+    if (!docSheet) {
+      return { success: false, message: "Không tìm thấy sheet Documents" };
+    }
+    
+    const lastRow = docSheet.getLastRow();
+    const data = docSheet.getRange(1, 1, lastRow, 1).getValues();
+    let rowIndex = -1;
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]) === docId) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return { success: false, message: "Không tìm thấy tài liệu" };
+    }
+    
+    docSheet.deleteRow(rowIndex);
+    return { success: true, message: "Xóa tài liệu thành công" };
+  } catch (e) {
+    Logger.log("Lỗi xóa tài liệu: " + e.toString());
+    return { success: false, message: "Lỗi: " + e.toString() };
+  }
+}
+
+// Tải file lên Google Drive
+function uploadFileToDrive(base64Data, fileName, mimeType) {
+  try {
+    var parts = base64Data.split(',');
+    var base64String = parts.length > 1 ? parts[1] : parts[0];
+    var decoded = Utilities.base64Decode(base64String);
+    var blob = Utilities.newBlob(decoded, mimeType, fileName);
+    
+    var folderName = "TTHT_Documents";
+    var folder;
+    var folders = DriveApp.getFoldersByName(folderName);
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder(folderName);
+    }
+    
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return {
+      success: true,
+      url: file.getUrl(),
+      name: fileName
+    };
+  } catch (e) {
+    Logger.log("Lỗi tải tệp lên Drive: " + e.toString());
+    return { success: false, message: "Lỗi tải tệp: " + e.toString() };
   }
 }
