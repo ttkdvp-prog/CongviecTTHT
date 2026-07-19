@@ -90,6 +90,20 @@ function handleApiRequest(params) {
       case 'uploadFile':
         result = uploadFileToDrive(params.base64Data, params.fileName, params.mimeType);
         break;
+      case 'getNoteTasks':
+        result = getNoteTasks();
+        break;
+      case 'addNoteTask':
+        var noteData = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = addNoteTask(noteData);
+        break;
+      case 'updateNoteTask':
+        var noteData2 = typeof params.data === 'string' ? JSON.parse(params.data) : params.data;
+        result = updateNoteTask(noteData2);
+        break;
+      case 'deleteNoteTask':
+        result = deleteNoteTask(params.id);
+        break;
       default:
         result = { success: false, message: "Action không hợp lệ: " + params.action };
     }
