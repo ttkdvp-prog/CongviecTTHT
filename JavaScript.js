@@ -672,6 +672,12 @@ function initDragAndDrop() {
         // Cập nhật cache
         updateTaskInCache(taskData);
         
+        // Cập nhật UI ở các view khác (List, Gantt)
+        updateTaskElementInUI(taskData);
+        
+        // Cập nhật thống kê
+        calculateAndRenderStats();
+        
         // Thêm vào hàng đợi để cập nhật lên server
         enqueueTaskUpdate(taskData, () => {
           console.log(`Đã cập nhật công việc ${taskId} thành công từ ${oldStatus} sang ${status}`);
@@ -2066,6 +2072,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
       
+      // Cập nhật các view khác (Kanban, Gantt) và thống kê
+      updateTaskElementInUI(task);
+      calculateAndRenderStats();
+      
       google.script.run
         .withSuccessHandler(function(result) {
           if (!result.success) {
@@ -2274,6 +2284,9 @@ taskForm.addEventListener('submit', (e) => {
     // Render lại UI
     renderTasks(allTasks);
     
+    // Cập nhật thống kê
+    calculateAndRenderStats();
+    
     // Hiển thị thông báo ngay lập tức
     showNotification('Đang thêm công việc mới...', 'success');
     
@@ -2401,6 +2414,9 @@ function updateLocalTaskData(taskData) {
   // Cập nhật task riêng lẻ trong UI thay vì render lại toàn bộ
   // (Hàm mới để cập nhật một task cụ thể)
   updateTaskElementInUI(taskData);
+  
+  // Cập nhật thống kê
+  calculateAndRenderStats();
 }
 
   // Cập nhật placeholder cho input date
@@ -2585,6 +2601,9 @@ document.querySelector('.add-attachment-btn').addEventListener('click', function
           
           // Cập nhật số lượng công việc
           updateTaskCounts();
+          
+          // Cập nhật thống kê
+          calculateAndRenderStats();
           
           // Hiển thị thông báo
           showNotification('Đã xóa công việc thành công!', 'success');

@@ -241,6 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
       renderListView();
       renderKanban();
       renderDashboard();
+      renderGanttView();
+      calculateAndRenderStats();
       
       try {
         await api.post('updateTask', { data: task });
@@ -521,7 +523,7 @@ function initDragDrop() {
       if (!task || task.status === newStatus) return;
       task.status = newStatus;
       if (newStatus === 'done') task.progress = 100;
-      renderKanban(); renderDashboard(); renderListView();
+      renderKanban(); renderDashboard(); renderListView(); renderGanttView(); calculateAndRenderStats();
       toast(`Đã chuyển sang "${statusText(newStatus)}"`, 'success');
       await api.post('updateTask', { data: task });
     });
