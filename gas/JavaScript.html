@@ -5635,23 +5635,20 @@ function calculateAndRenderStats() {
           const planVal = task.planValue || 0;
           const actualVal = task.actualValue || 0;
 
-          // Lấy tên người phụ trách từ danh sách assignees
-          const assigneeNames = (task.assignees || []).map(aId => {
-            const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
-            return user ? user.name : '';
-          }).filter(n => n).join(', ');
+          // Lấy tên người phụ trách chính (người đầu tiên trong danh sách)
+          const firstAssigneeId = (task.assignees || [])[0];
+          const firstUser = firstAssigneeId ? users.find(u => String(u.id).trim().toUpperCase() === String(firstAssigneeId).trim().toUpperCase()) : null;
+          const assigneeName = firstUser ? firstUser.name : '';
 
-          const key = `${team} ||| ${title}`;
+          const key = `${team} ||| ${assigneeName} ||| ${title}`;
           if (!groupedSummary[key]) {
             groupedSummary[key] = {
               teams: team,
               title: title,
-              assigneeNames: assigneeNames,
+              assigneeNames: assigneeName,
               plan: 0,
               actual: 0
             };
-          } else if (assigneeNames && !groupedSummary[key].assigneeNames.includes(assigneeNames)) {
-            groupedSummary[key].assigneeNames += ', ' + assigneeNames;
           }
           groupedSummary[key].plan += planVal;
           groupedSummary[key].actual += actualVal;
