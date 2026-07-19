@@ -2020,6 +2020,31 @@ document.addEventListener('DOMContentLoaded', () => {
       
       task.completionDate = val;
       
+      // Tự động xác định trạng thái dựa trên ngày làm xong và hạn hoàn thành
+      if (val && task.dueDate) {
+        const compDate = new Date(val);
+        const dueParts = task.dueDate.split('/');
+        const dueDate = new Date(dueParts[2], parseInt(dueParts[1]) - 1, parseInt(dueParts[0]));
+        
+        if (compDate <= dueDate) {
+          task.status = 'done';
+          task.progress = 100;
+        } else {
+          task.status = 'overdue';
+        }
+      } else if (!val) {
+        task.status = 'inprogress';
+      }
+      
+      // Cập nhật giao diện trạng thái trên bảng
+      const tr = e.target.closest('tr');
+      if (tr) {
+        const cells = tr.querySelectorAll('td');
+        if (cells[7]) {
+          cells[7].innerHTML = `<span class="status-cell ${task.status}">${getStatusText(task.status)}</span>`;
+        }
+      }
+      
       google.script.run
         .withSuccessHandler(function(result) {
           if (!result.success) {
@@ -2027,6 +2052,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadData(true);
           } else {
             updateTaskInCache(task);
+            updateTaskCounts();
             showNotification('Đã cập nhật ngày làm xong!', 'success');
           }
         })

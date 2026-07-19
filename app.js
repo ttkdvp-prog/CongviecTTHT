@@ -178,6 +178,27 @@ document.addEventListener('DOMContentLoaded', () => {
       
       task.completionDate = val;
       
+      // Tự động xác định trạng thái dựa trên ngày làm xong và hạn hoàn thành
+      if (val && task.dueDate) {
+        const compDate = new Date(val);
+        const dueParts = task.dueDate.split('/');
+        const dueDate = new Date(dueParts[2], parseInt(dueParts[1]) - 1, parseInt(dueParts[0]));
+        
+        if (compDate <= dueDate) {
+          task.status = 'done';
+          task.progress = 100;
+        } else {
+          task.status = 'overdue';
+        }
+      } else if (!val) {
+        task.status = 'inprogress';
+      }
+      
+      // Cập nhật giao diện
+      renderListView();
+      renderKanban();
+      renderDashboard();
+      
       try {
         await api.post('updateTask', { data: task });
         toast('Đã lưu ngày làm xong!', 'success');
