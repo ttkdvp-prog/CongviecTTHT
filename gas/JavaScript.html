@@ -5616,34 +5616,33 @@ function calculateAndRenderStats() {
           taskAssignees.forEach(aId => {
             const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
             if (user && user.team) {
-              if (teamFilterVal && !isTeamMatch(user.team, teamFilterVal)) {
-                return;
-              }
               teamsSet.add(user.team);
             }
           });
 
-          // Nếu có lọc tổ cụ thể và không có thành viên nào của tổ đó tham gia, bỏ qua task này
-          if (teamFilterVal && teamsSet.size === 0) {
-            return;
-          }
+          const teamsList = teamsSet.size > 0 ? Array.from(teamsSet) : ['Chưa phân tổ'];
 
-          const teamsStr = teamsSet.size > 0 ? Array.from(teamsSet).join(', ') : 'Chưa phân tổ';
-          const title = (task.title || '').trim();
-          const planVal = task.planValue || 0;
-          const actualVal = task.actualValue || 0;
+          teamsList.forEach(team => {
+            if (teamFilterVal && !isTeamMatch(team, teamFilterVal)) {
+              return;
+            }
 
-          const key = `${teamsStr} ||| ${title}`;
-          if (!groupedSummary[key]) {
-            groupedSummary[key] = {
-              teams: teamsStr,
-              title: title,
-              plan: 0,
-              actual: 0
-            };
-          }
-          groupedSummary[key].plan += planVal;
-          groupedSummary[key].actual += actualVal;
+            const title = (task.title || '').trim();
+            const planVal = task.planValue || 0;
+            const actualVal = task.actualValue || 0;
+
+            const key = `${team} ||| ${title}`;
+            if (!groupedSummary[key]) {
+              groupedSummary[key] = {
+                teams: team,
+                title: title,
+                plan: 0,
+                actual: 0
+              };
+            }
+            groupedSummary[key].plan += planVal;
+            groupedSummary[key].actual += actualVal;
+          });
         });
 
         const reportRows = Object.values(groupedSummary);
