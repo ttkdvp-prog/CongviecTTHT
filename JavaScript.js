@@ -3013,8 +3013,11 @@ function filterTasksClientSide() {
   const dateValue = dateFilter.value;
   const searchTerm = searchInput.value.toLowerCase().trim();
   
+  const assigneeSearchEl = document.getElementById('assignee-search-input');
+  const assigneeSearchTerm = assigneeSearchEl ? assigneeSearchEl.value.toLowerCase().trim() : '';
+  
   // Nếu không có bộ lọc nào được áp dụng, hiển thị tất cả
-  if (!assigneeValue && !dateValue && !searchTerm) {
+  if (!assigneeValue && !dateValue && !searchTerm && !assigneeSearchTerm) {
     renderTasks(allTasks);
     return;
   }
@@ -3114,6 +3117,21 @@ function filterTasksClientSide() {
     );
   }
   
+  // Lọc theo từ khoá tìm kiếm người phụ trách (tên hoặc mã NV)
+  if (assigneeSearchTerm) {
+    filteredTasks = filteredTasks.filter(task => {
+      if (!task.assignees || task.assignees.length === 0) return false;
+      return task.assignees.some(assigneeId => {
+        const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
+        if (!user) return false;
+        // Tìm theo tên, mã NV hoặc viết tắt tổ
+        return user.name.toLowerCase().includes(assigneeSearchTerm) ||
+               user.id.toLowerCase().includes(assigneeSearchTerm) ||
+               (user.initials && user.initials.toLowerCase().includes(assigneeSearchTerm));
+      });
+    });
+  }
+
   // Render kết quả lọc
   renderTasks(filteredTasks);
   
@@ -3160,6 +3178,17 @@ function setupFilterEvents() {
       filterTasksClientSide();
     }
   });
+
+  // Ô tìm kiếm người phụ trách
+  const assigneeSearchInput = document.getElementById('assignee-search-input');
+  if (assigneeSearchInput) {
+    assigneeSearchInput.addEventListener('input', debounce(filterTasksClientSide, 300));
+    assigneeSearchInput.addEventListener('keyup', e => {
+      if (e.key === 'Enter') {
+        filterTasksClientSide();
+      }
+    });
+  }
 }
 
 // Hàm debounce để tránh gọi quá nhiều lần khi người dùng gõ
