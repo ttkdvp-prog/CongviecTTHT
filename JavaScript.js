@@ -5644,10 +5644,25 @@ function calculateAndRenderStats() {
           const planVal = task.planValue || 0;
           const actualVal = task.actualValue || 0;
 
-          // Lấy tên người phụ trách chính (người đầu tiên trong danh sách)
-          const firstAssigneeId = (task.assignees || [])[0];
-          const firstUser = firstAssigneeId ? users.find(u => String(u.id).trim().toUpperCase() === String(firstAssigneeId).trim().toUpperCase()) : null;
-          const assigneeName = firstUser ? firstUser.name : '';
+          // Lấy tên người phụ trách chính từ Cột E (Họ tên) theo vị trí tương ứng với Tổ trong Cột F
+          let assigneeName = '';
+          if (task.assigneeNames && task.team) {
+            const teamsList = task.team.split(',').map(t => t.trim());
+            const namesList = task.assigneeNames.split(',').map(n => n.trim());
+            const teamIndex = teamsList.findIndex(t => t.toLowerCase() === team.toLowerCase());
+            if (teamIndex >= 0 && teamIndex < namesList.length) {
+              assigneeName = namesList[teamIndex];
+            } else if (namesList.length > 0) {
+              assigneeName = namesList[0];
+            }
+          } else if (task.assigneeNames) {
+            assigneeName = task.assigneeNames.split(',')[0].trim();
+          } else {
+            // Fallback: tìm từ danh sách users
+            const firstId = (task.assignees || [])[0];
+            const firstUser = firstId ? users.find(u => String(u.id).trim().toUpperCase() === String(firstId).trim().toUpperCase()) : null;
+            assigneeName = firstUser ? firstUser.name : '';
+          }
 
           const key = `${team} ||| ${assigneeName} ||| ${title}`;
           if (!groupedSummary[key]) {

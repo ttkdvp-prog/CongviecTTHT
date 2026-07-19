@@ -680,6 +680,7 @@ function getTasks() {
         title: String(row[1]),
         description: String(row[2]),
         team: row[5] !== undefined ? String(row[5]).trim() : "",
+        assigneeNames: row[4] !== undefined ? String(row[4]).trim() : "",
         status: String(row[6]),
         priority: String(row[7]),
         startDate: startDate,
