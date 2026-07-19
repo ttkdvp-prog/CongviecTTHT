@@ -1606,6 +1606,7 @@ function getStatusText(status) {
   switch(status) {
     case 'inprogress': return 'Đang Thực Hiện';
     case 'done': return 'Hoàn Thành';
+    case 'done_late': return 'Hoàn Thành Quá Hạn';
     case 'overdue': return 'Quá Hạn';
     case 'cancelled': return 'Đã Huỷ';
     default: return 'Đang Thực Hiện';
@@ -2048,14 +2049,8 @@ document.addEventListener('DOMContentLoaded', () => {
           task.status = 'done';
           task.progress = 100;
         } else {
-          task.status = 'overdue';
-          // Tính lại tiến độ theo công việc con
-          if (task.subtasks && task.subtasks.length > 0) {
-            const completed = task.subtasks.filter(s => s.completed).length;
-            task.progress = Math.round((completed / task.subtasks.length) * 100);
-          } else {
-            task.progress = 0;
-          }
+          task.status = 'done_late';
+          task.progress = 100;
         }
       } else if (!val) {
         // Xóa ngày làm xong → quay về Đang thực hiện
@@ -2128,7 +2123,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (compNum <= dueNum) {
             task.status = 'done';
           } else {
-            task.status = 'overdue';
+            task.status = 'done_late';
           }
         } else {
           task.status = 'done';

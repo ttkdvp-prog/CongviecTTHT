@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (compNum <= dueNum) {
             task.status = 'done';
           } else {
-            task.status = 'overdue';
+            task.status = 'done_late';
           }
         } else {
           task.status = 'done';

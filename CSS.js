@@ -2707,6 +2707,10 @@ tr.deleting {
   background: rgba(100, 116, 139, 0.15);
   color: #94a3b8;
 }
+.badge-done_late {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
 
 /* File Upload Button styling */
 .file-upload-wrapper {
