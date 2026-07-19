@@ -172,7 +172,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
 /* ===== List/Table ===== */
 .list-container{overflow:auto}
 .data-table{width:100%;border-collapse:collapse}
-.data-table th{text-align:left;padding:14px 16px;font-weight:600;font-size:.8rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--glass-border);white-space:nowrap}
+.data-table th{text-align:left;padding:14px 16px;font-weight:600;font-size:.8rem;color:var(--text);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--glass-border);white-space:nowrap;background:rgba(255,255,255,0.06)}
 .data-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.03);font-size:.9rem;white-space:nowrap}
 .data-table tbody tr{transition:var(--transition)}
 .data-table tbody tr:hover{background:var(--glass-hover)}
