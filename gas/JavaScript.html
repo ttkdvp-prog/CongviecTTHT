@@ -1098,13 +1098,14 @@ function renderListView(tasks) {
     const row = document.createElement('tr');
     row.dataset.id = task.id;
     
-    // Tạo text tên người phụ trách (hiển thị dạng text giống cột Mô tả)
+    // Tạo text tên người phụ trách (hiển thị dạng text giống cột Mô tả, tự xuống dòng)
     let assigneesText = '';
     if (task.assignees && task.assignees.length > 0) {
       assigneesText = task.assignees.map(assigneeId => {
         const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
-        return user ? user.name : '';
-      }).filter(n => n).join(', ');
+        if (!user) return '';
+        return `${user.name}<br><span style="opacity:0.7;">(${user.id}) [${user.initials}]</span>`;
+      }).filter(n => n).join('<br>');
     }
     
     // Tạo HTML cho tệp đính kèm CÓ KHẢ NĂNG CLICK ĐỂ XEM
