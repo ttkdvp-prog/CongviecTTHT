@@ -61,6 +61,10 @@
         <i class="fas fa-chart-column"></i>
         <span>Đánh giá & Thống kê</span>
       </a>
+      <a href="#" class="nav-link" data-view="notetasks" id="nav-notetasks">
+        <i class="fas fa-clipboard-check"></i>
+        <span>Công việc lưu ý</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -394,6 +398,49 @@
         </div>
       </div>
     </section>
+
+    <!-- ==================== NOTE TASKS VIEW ==================== -->
+    <section class="view" id="notetasks-view">
+      <div class="documents-header glass">
+        <div class="documents-filters">
+          <div class="documents-search">
+            <i class="fas fa-search"></i>
+            <input type="text" id="note-search-input" placeholder="Tìm kiếm công việc lưu ý...">
+          </div>
+          <select id="note-team-filter" class="documents-select">
+            <option value="">Tất cả tổ</option>
+          </select>
+          <button class="btn-icon" id="note-refresh-btn" title="Làm mới dữ liệu">
+            <i class="fas fa-arrows-rotate"></i>
+          </button>
+        </div>
+        <button class="btn-primary" id="add-note-btn">
+          <i class="fas fa-plus"></i>
+          <span>Thêm việc lưu ý</span>
+        </button>
+      </div>
+      
+      <div class="list-container glass">
+        <table class="data-table" id="note-table">
+          <thead>
+            <tr>
+              <th>Công việc</th>
+              <th>Mô tả</th>
+              <th>Tổ</th>
+              <th>Bắt đầu</th>
+              <th>Kết thúc</th>
+              <th>Ngày làm xong</th>
+              <th>Trạng thái</th>
+              <th>Ghi chú</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="note-table-body">
+            <tr><td colspan="9" class="empty-cell"><i class="fas fa-inbox"></i> Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <!-- ==================== TASK MODAL ==================== -->
@@ -709,6 +756,69 @@
         <button class="btn" id="doc-view-btn-replace" style="background: #f97316; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-file-arrow-up"></i> Thay thế hồ sơ</button>
         <button class="btn" id="doc-view-btn-delete" style="background: #ef4444; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-trash-can"></i> Xóa</button>
         <button class="btn" data-close="doc-view-modal" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== NOTE TASK MODAL ==================== -->
+  <div class="modal-overlay" id="note-modal">
+    <div class="modal glass-modal">
+      <div class="modal-header">
+        <h2 id="note-modal-title"><i class="fas fa-plus-circle"></i> Thêm việc lưu ý mới</h2>
+        <button class="btn-icon modal-close" data-close="note-modal"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <form id="note-form">
+          <input type="hidden" id="note-id">
+          <div class="form-group">
+            <label for="note-title">Công việc <span class="required">*</span></label>
+            <input type="text" id="note-title" placeholder="Nhập tên công việc..." required>
+          </div>
+          <div class="form-group">
+            <label for="note-desc">Mô tả</label>
+            <textarea id="note-desc" rows="2" placeholder="Mô tả chi tiết..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="note-team">Tổ <span class="required">*</span></label>
+              <select id="note-team" required>
+                <option value="">-- Chọn tổ --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="note-status">Trạng thái</label>
+              <select id="note-status">
+                <option value="inprogress">Đang thực hiện</option>
+                <option value="done">Hoàn thành</option>
+                <option value="overdue">Quá hạn</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="note-start">Ngày bắt đầu</label>
+              <input type="date" id="note-start">
+            </div>
+            <div class="form-group">
+              <label for="note-due">Ngày kết thúc</label>
+              <input type="date" id="note-due">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="note-completion">Ngày làm xong</label>
+              <input type="date" id="note-completion">
+            </div>
+            <div class="form-group">
+              <label for="note-notes">Ghi chú</label>
+              <input type="text" id="note-notes" placeholder="Ghi chú thêm..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text);">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" data-close="note-modal">Huỷ bỏ</button>
+            <button type="submit" class="btn-primary" id="save-note-btn"><i class="fas fa-save"></i> Lưu lại</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
