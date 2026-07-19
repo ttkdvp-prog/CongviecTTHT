@@ -129,6 +129,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
 .badge-inprogress{background:rgba(14,165,233,.15);color:#0ea5e9}
 .badge-done{background:rgba(0,196,140,.15);color:#00c48c}
 .badge-overdue{background:rgba(244,63,94,.15);color:#f43f5e}
+.badge-done_late{background:rgba(245,158,11,.15);color:#f59e0b}
 .badge-cancelled{background:rgba(100,116,139,.15);color:#94a3b8}
 .badge-high{background:rgba(244,63,94,.12);color:#f43f5e}
 .badge-medium{background:rgba(245,158,11,.12);color:#f59e0b}

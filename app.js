@@ -188,13 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
           task.status = 'done';
           task.progress = 100;
         } else {
-          task.status = 'overdue';
-          if (task.subtasks && task.subtasks.length > 0) {
-            const completed = task.subtasks.filter(s => s.completed).length;
-            task.progress = Math.round((completed / task.subtasks.length) * 100);
-          } else {
-            task.progress = 0;
-          }
+          task.status = 'done_late';
+          task.progress = 100;
         }
       } else if (!val) {
         // Ngày làm xong bị trống -> kiểm tra xem hôm nay đã quá hạn chưa
@@ -306,8 +301,23 @@ async function loadAllData() {
     const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
     
     allTasks.forEach(t => {
-      // Nếu chưa có ngày làm xong, và đã có hạn hoàn thành, và trạng thái đang là done (lỗi dữ liệu) hoặc inprogress
-      if (!t.completionDate && t.dueDate && t.status !== 'done') {
+      // Nếu có ngày làm xong và hạn hoàn thành, kiểm tra xem có hoàn thành quá hạn không
+      if (t.completionDate && t.dueDate) {
+        const compNum = t.completionDate.replace(/-/g, '');
+        const dueParts = t.dueDate.split('/');
+        if (dueParts.length === 3) {
+          const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+          if (compNum > dueNum) {
+            t.status = 'done_late';
+            t.progress = 100;
+          } else {
+            t.status = 'done';
+            t.progress = 100;
+          }
+        }
+      }
+      // Nếu chưa có ngày làm xong, và đã có hạn hoàn thành
+      else if (!t.completionDate && t.dueDate && t.status !== 'done') {
         const dueParts = t.dueDate.split('/');
         if (dueParts.length === 3) {
           const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
@@ -357,7 +367,7 @@ function renderAll() {
 
 /* ===== Helpers ===== */
 function statusText(s) {
-  return { inprogress: 'Đang thực hiện', done: 'Hoàn thành', overdue: 'Quá hạn', cancelled: 'Đã huỷ' }[s] || s;
+  return { inprogress: 'Đang thực hiện', done: 'Hoàn thành', done_late: 'Hoàn thành quá hạn', overdue: 'Quá hạn', cancelled: 'Đã huỷ' }[s] || s;
 }
 function priorityText(p) {
   return { high: 'Cao', medium: 'Trung bình', low: 'Thấp' }[p] || p;
