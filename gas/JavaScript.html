@@ -5605,7 +5605,7 @@ function calculateAndRenderStats() {
     jobStatsTfoot.innerHTML = '';
 
     if (!keyword) {
-      jobStatsTbody.innerHTML = '<tr><td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-keyboard" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng nhập từ khoá công việc để thống kê sản lượng</td></tr>';
+      jobStatsTbody.innerHTML = '<tr><td colspan="6" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-keyboard" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng nhập từ khoá công việc để thống kê sản lượng</td></tr>';
     } else {
       // Lọc công việc theo tên và tháng
       const matchingTasks = allTasks.filter(t => {
@@ -5619,7 +5619,7 @@ function calculateAndRenderStats() {
       });
 
       if (matchingTasks.length === 0) {
-        jobStatsTbody.innerHTML = `<tr><td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-info" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Không tìm thấy công việc nào khớp từ khoá "${keyword}" trong tháng này</td></tr>`;
+        jobStatsTbody.innerHTML = `<tr><td colspan="6" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-info" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Không tìm thấy công việc nào khớp từ khoá "${keyword}" trong tháng này</td></tr>`;
       } else {
         const groupedSummary = {};
 
@@ -5635,14 +5635,23 @@ function calculateAndRenderStats() {
           const planVal = task.planValue || 0;
           const actualVal = task.actualValue || 0;
 
+          // Lấy tên người phụ trách từ danh sách assignees
+          const assigneeNames = (task.assignees || []).map(aId => {
+            const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
+            return user ? user.name : '';
+          }).filter(n => n).join(', ');
+
           const key = `${team} ||| ${title}`;
           if (!groupedSummary[key]) {
             groupedSummary[key] = {
               teams: team,
               title: title,
+              assigneeNames: assigneeNames,
               plan: 0,
               actual: 0
             };
+          } else if (assigneeNames && !groupedSummary[key].assigneeNames.includes(assigneeNames)) {
+            groupedSummary[key].assigneeNames += ', ' + assigneeNames;
           }
           groupedSummary[key].plan += planVal;
           groupedSummary[key].actual += actualVal;
@@ -5670,6 +5679,7 @@ function calculateAndRenderStats() {
           rowsHtml += `
             <tr>
               <td style="padding: 12px;"><strong>${row.teams}</strong></td>
+              <td style="padding: 12px; color: var(--text2); font-size: 0.9rem;">${row.assigneeNames || ''}</td>
               <td style="padding: 12px; color: var(--text);">${row.title}</td>
               <td style="text-align: right; padding: 12px; font-weight: 500; color: #38bdf8;">${row.plan}</td>
               <td style="text-align: right; padding: 12px; font-weight: 500; color: #34d399;">${row.actual}</td>
@@ -5681,14 +5691,14 @@ function calculateAndRenderStats() {
         });
 
         if (rowsHtml === '') {
-          jobStatsTbody.innerHTML = '<tr><td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-question" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Các công việc tìm thấy chưa được gán tổ phụ trách hoặc không có số liệu sản lượng</td></tr>';
+          jobStatsTbody.innerHTML = '<tr><td colspan="6" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-question" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Các công việc tìm thấy chưa được gán tổ phụ trách hoặc không có số liệu sản lượng</td></tr>';
         } else {
           jobStatsTbody.innerHTML = rowsHtml;
           const grandRate = grandTotalPlan > 0 ? Math.round((grandTotalActual / grandTotalPlan) * 100) : 0;
 
           jobStatsTfoot.innerHTML = `
             <tr style="border-top: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); font-weight: 700;">
-              <td style="padding: 12px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;" colspan="2"><i class="fas fa-calculator" style="margin-right: 6px; color: #f59e0b;"></i>Tổng cộng</td>
+              <td style="padding: 12px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;" colspan="3"><i class="fas fa-calculator" style="margin-right: 6px; color: #f59e0b;"></i>Tổng cộng</td>
               <td style="text-align: right; padding: 12px; font-size: 1.05rem; color: #38bdf8;">${grandTotalPlan}</td>
               <td style="text-align: right; padding: 12px; font-size: 1.05rem; color: #34d399;">${grandTotalActual}</td>
               <td style="text-align: center; padding: 12px; font-size: 1.05rem; color: #f59e0b;">${grandRate}%</td>
