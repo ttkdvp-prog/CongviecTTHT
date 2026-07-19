@@ -5564,6 +5564,105 @@ function calculateAndRenderStats() {
       </tr>
     `;
   }
+
+  // 3. Tính toán sản lượng theo tên Công việc (Kế hoạch vs Thực hiện)
+  const jobStatsTbody = document.getElementById('job-stats-tbody');
+  const jobStatsTfoot = document.getElementById('job-stats-tfoot');
+  const jobKeywordEl = document.getElementById('stats-job-keyword');
+  const keyword = jobKeywordEl ? jobKeywordEl.value.trim() : '';
+
+  if (jobStatsTbody && jobStatsTfoot) {
+    jobStatsTbody.innerHTML = '';
+    jobStatsTfoot.innerHTML = '';
+
+    if (!keyword) {
+      jobStatsTbody.innerHTML = '<tr><td colspan="4" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-keyboard" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng nhập từ khoá công việc để thống kê sản lượng</td></tr>';
+    } else {
+      // Lọc công việc theo tên và tháng
+      const matchingTasks = allTasks.filter(t => {
+        const parsedDue = parseTaskDate(t.dueDate);
+        if (!parsedDue) return false;
+        
+        const isDueInMonth = parsedDue.year === filterYear && parsedDue.month === filterMonth;
+        const isNameMatch = t.title.toLowerCase().includes(keyword.toLowerCase());
+        
+        return isDueInMonth && isNameMatch;
+      });
+
+      if (matchingTasks.length === 0) {
+        jobStatsTbody.innerHTML = `<tr><td colspan="4" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-info" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Không tìm thấy công việc nào khớp từ khoá "${keyword}" trong tháng này</td></tr>`;
+      } else {
+        // Gom nhóm và tính tổng cho mỗi tổ
+        const jobSummary = {};
+        allTeams.forEach(team => {
+          jobSummary[team] = { plan: 0, actual: 0 };
+        });
+
+        matchingTasks.forEach(task => {
+          const taskAssignees = task.assignees || [];
+          const teamsInvolved = new Set();
+          taskAssignees.forEach(aId => {
+            const user = users.find(u => u.id === aId);
+            if (user && user.team) {
+              teamsInvolved.add(user.team);
+            }
+          });
+
+          const planVal = task.planValue || 0;
+          const actualVal = task.actualValue || 0;
+          
+          if (teamsInvolved.size > 0) {
+            teamsInvolved.forEach(team => {
+              if (jobSummary[team]) {
+                jobSummary[team].plan += planVal;
+                jobSummary[team].actual += actualVal;
+              }
+            });
+          }
+        });
+
+        let grandTotalPlan = 0;
+        let grandTotalActual = 0;
+        let rowsHtml = '';
+
+        allTeams.forEach(team => {
+          const data = jobSummary[team];
+          if (data.plan > 0 || data.actual > 0) {
+            const rate = data.plan > 0 ? Math.round((data.actual / data.plan) * 100) : 0;
+            grandTotalPlan += data.plan;
+            grandTotalActual += data.actual;
+            
+            rowsHtml += `
+              <tr>
+                <td style="padding: 12px;"><strong>${team}</strong></td>
+                <td style="text-align: right; padding: 12px; font-weight: 500; color: #38bdf8;">${data.plan}</td>
+                <td style="text-align: right; padding: 12px; font-weight: 500; color: #34d399;">${data.actual}</td>
+                <td style="text-align: center; padding: 12px;">
+                  <span class="badge" style="background: rgba(245,158,11,0.12); color: #f59e0b;">${rate}%</span>
+                </td>
+              </tr>
+            `;
+          }
+        });
+
+        if (rowsHtml === '') {
+          jobStatsTbody.innerHTML = '<tr><td colspan="4" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-question" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Các công việc tìm thấy chưa được gán tổ phụ trách hoặc không có số liệu sản lượng</td></tr>';
+        } else {
+          jobStatsTbody.innerHTML = rowsHtml;
+          const grandRate = grandTotalPlan > 0 ? Math.round((grandTotalActual / grandTotalPlan) * 100) : 0;
+
+          jobStatsTfoot.innerHTML = `
+            <tr style="border-top: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); font-weight: 700;">
+              <td style="padding: 12px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;"><i class="fas fa-calculator" style="margin-right: 6px; color: #f59e0b;"></i>Tổng cộng</td>
+              <td style="text-align: right; padding: 12px; font-size: 1.05rem; color: #38bdf8;">${grandTotalPlan}</td>
+              <td style="text-align: right; padding: 12px; font-size: 1.05rem; color: #34d399;">${grandTotalActual}</td>
+              <td style="text-align: center; padding: 12px; font-size: 1.05rem; color: #f59e0b;">${grandRate}%</td>
+            </tr>
+          `;
+        }
+      }
+    }
+  }
 }
 
 
