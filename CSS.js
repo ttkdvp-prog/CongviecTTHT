@@ -2926,6 +2926,8 @@ tr.deleting {
   min-width: 220px !important;
   max-width: 220px !important;
   width: 220px !important;
+  white-space: normal !important;
+  word-break: break-word !important;
   border-right: 1px solid var(--glass-border) !important;
 }
 
