@@ -197,7 +197,20 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       } else if (!val) {
-        task.status = 'inprogress';
+        // Ngày làm xong bị trống -> kiểm tra xem hôm nay đã quá hạn chưa
+        let isOverdue = false;
+        if (task.dueDate) {
+          const today = new Date();
+          const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+          const dueParts = task.dueDate.split('/');
+          if (dueParts.length === 3) {
+            const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+            if (todayNum > dueNum) isOverdue = true;
+          }
+        }
+        
+        task.status = isOverdue ? 'overdue' : 'inprogress';
+        
         if (task.subtasks && task.subtasks.length > 0) {
           const completed = task.subtasks.filter(s => s.completed).length;
           task.progress = Math.round((completed / task.subtasks.length) * 100);
@@ -287,6 +300,26 @@ async function loadAllData() {
       api.get('getDocuments')
     ]);
     allTasks = Array.isArray(tasks) ? tasks : [];
+    
+    // Tự động kiểm tra quá hạn cho tất cả các task khi vừa tải về
+    const today = new Date();
+    const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+    
+    allTasks.forEach(t => {
+      // Nếu chưa có ngày làm xong, và đã có hạn hoàn thành, và trạng thái đang là done (lỗi dữ liệu) hoặc inprogress
+      if (!t.completionDate && t.dueDate && t.status !== 'done') {
+        const dueParts = t.dueDate.split('/');
+        if (dueParts.length === 3) {
+          const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+          if (todayNum > dueNum) {
+            t.status = 'overdue';
+          } else {
+            t.status = 'inprogress';
+          }
+        }
+      }
+    });
+    
     users = Array.isArray(usersData) ? usersData : [];
     allTeams = Array.isArray(teamsData) ? teamsData : [];
     allDocuments = Array.isArray(docsData) ? docsData : [];
