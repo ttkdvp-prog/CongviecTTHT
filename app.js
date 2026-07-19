@@ -547,6 +547,10 @@ function openTaskModal(task) {
   $('modal-team-filter').value = '';
   $('modal-assignee-search').value = '';
   $('task-notes').value = '';
+  // Clear previous selections to avoid carrying them over
+  const picker = $('assignee-picker-list');
+  if (picker) picker.innerHTML = '';
+  
   populateAssigneePicker();
 
   if (isEdit) {
@@ -743,7 +747,21 @@ function setupTaskForm() {
       if (result && result.success !== false) {
         toast(taskId ? 'Đã cập nhật công việc!' : 'Đã thêm công việc mới!');
         $('task-modal').classList.remove('show');
-        await loadAllData();
+        
+        // Optimistic UI update: cập nhật mảng local và render ngay lập tức thay vì tải lại toàn bộ
+        if (taskId) {
+          const idx = allTasks.findIndex(t => t.id === taskId);
+          if (idx !== -1) {
+            allTasks[idx] = { ...allTasks[idx], ...taskData };
+          }
+        } else {
+          taskData.id = result.taskId || ('task-' + Date.now());
+          allTasks.push(taskData);
+        }
+        
+        renderAll();
+        // Không tải lại toàn bộ dữ liệu nữa để tăng tốc độ
+        // await loadAllData();
       } else {
         toast(result?.message || 'Có lỗi xảy ra!', 'error');
       }
