@@ -2017,8 +2017,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         // Trạng thái chưa hoàn thành
+        task.completionDate = ''; // Xóa ngày hoàn thành nếu thực tế nhỏ hơn kế hoạch
         if (plan > 0) {
           task.progress = Math.min(99, Math.round((val / plan) * 100));
+        } else {
+          task.progress = 0;
         }
         
         // Tự động kiểm tra quá hạn
@@ -2123,14 +2126,32 @@ document.addEventListener('DOMContentLoaded', () => {
           task.progress = 100;
         }
       } else if (!val) {
-        // Xóa ngày làm xong → quay về Đang thực hiện
-        task.status = 'inprogress';
-        // Tính lại tiến độ theo công việc con
+        // Ngày làm xong bị trống -> kiểm tra xem hôm nay đã quá hạn chưa
+        let isOverdue = false;
+        if (task.dueDate) {
+          const today = new Date();
+          const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+          const dueParts = task.dueDate.split('/');
+          if (dueParts.length === 3) {
+            const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+            if (todayNum > dueNum) isOverdue = true;
+          }
+        }
+        
+        task.status = isOverdue ? 'overdue' : 'inprogress';
+        
+        // Tính lại tiến độ theo công việc con hoặc tỷ lệ
         if (task.subtasks && task.subtasks.length > 0) {
           const completed = task.subtasks.filter(s => s.completed).length;
           task.progress = Math.round((completed / task.subtasks.length) * 100);
         } else {
-          task.progress = 0;
+          const plan = task.planValue || 0;
+          const actual = task.actualValue || 0;
+          if (plan > 0) {
+            task.progress = Math.min(99, Math.round((actual / plan) * 100));
+          } else {
+            task.progress = 0;
+          }
         }
       }
       
@@ -2469,17 +2490,91 @@ taskForm.addEventListener('submit', (e) => {
   const startDateInput = document.getElementById('task-start-date').value;
   const dueDateInput = document.getElementById('task-due-date').value;
   
+  const plan = Number(document.getElementById('task-plan-value').value) || 0;
+  const originalTask = isEdit ? allTasks.find(t => t.id === taskId) : null;
+  const actual = originalTask ? (originalTask.actualValue || 0) : 0;
+  let completionDate = originalTask ? (originalTask.completionDate || '') : '';
+  let status = originalTask ? (originalTask.status || 'inprogress') : 'inprogress';
+  
+  // Thu thập công việc con
+  const subtasks = Array.from(document.querySelectorAll('.subtasks-list .subtask-list-item')).map(item => {
+    return {
+      text: item.querySelector('.subtask-text') ? item.querySelector('.subtask-text').textContent : '',
+      completed: item.querySelector('.subtask-checkbox') ? item.querySelector('.subtask-checkbox').checked : false
+    };
+  });
+  
+  // Tính tiến độ
+  let progress = 0;
+  if (subtasks.length > 0) {
+    const completedCount = subtasks.filter(s => s.completed).length;
+    progress = Math.round(completedCount / subtasks.length * 100);
+  } else {
+    if (plan > 0) {
+      if (actual >= plan) {
+        progress = 100;
+      } else {
+        progress = Math.min(99, Math.round((actual / plan) * 100));
+      }
+    } else {
+      progress = 0;
+    }
+  }
+  
+  // Tự động điều chỉnh trạng thái và ngày làm xong dựa trên kế hoạch và thực tế (nếu không có subtask)
+  if (subtasks.length === 0) {
+    if (plan > 0 && actual >= plan) {
+      if (!completionDate) {
+        const today = new Date();
+        completionDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+      }
+      
+      const dueDateVal = formatDate(dueDateInput);
+      if (dueDateVal) {
+        const compNum = completionDate.replace(/-/g, '');
+        const dueParts = dueDateVal.split('/');
+        if (dueParts.length === 3) {
+          const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+          status = compNum > dueNum ? 'done_late' : 'done';
+        } else {
+          status = 'done';
+        }
+      } else {
+        status = 'done';
+      }
+    } else {
+      completionDate = '';
+      
+      const dueDateVal = formatDate(dueDateInput);
+      if (dueDateVal) {
+        const today = new Date();
+        const todayNum = today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
+        const dueParts = dueDateVal.split('/');
+        if (dueParts.length === 3) {
+          const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+          status = todayNum > dueNum ? 'overdue' : 'inprogress';
+        } else {
+          status = 'inprogress';
+        }
+      } else {
+        status = 'inprogress';
+      }
+    }
+  }
+  
   const taskData = {
     id: taskId,
     title: document.getElementById('task-title-input').value,
     description: document.getElementById('task-desc-input').value,
-    priority: isEdit ? (allTasks.find(t => t.id === taskId)?.priority || 'medium') : 'medium',
-    status: isEdit ? (allTasks.find(t => t.id === taskId)?.status || 'inprogress') : 'inprogress',
+    priority: isEdit ? (originalTask?.priority || 'medium') : 'medium',
+    status: status,
     startDate: formatDate(startDateInput),
     dueDate: formatDate(dueDateInput),
-    planValue: Number(document.getElementById('task-plan-value').value) || 0,
-    actualValue: isEdit ? (allTasks.find(t => t.id === taskId)?.actualValue || 0) : 0,
+    planValue: plan,
+    actualValue: actual,
     notes: (document.getElementById('task-notes') || {}).value || '',
+    completionDate: completionDate,
+    progress: progress,
     
     // Thu thập người phụ trách
     assignees: Array.from(document.querySelectorAll('.assignee-checkbox:checked')).map(
@@ -2497,12 +2592,7 @@ taskForm.addEventListener('submit', (e) => {
     }),
     
     // Thu thập công việc con
-    subtasks: Array.from(document.querySelectorAll('.subtasks-list .subtask-list-item')).map(item => {
-      return {
-        text: item.querySelector('.subtask-text') ? item.querySelector('.subtask-text').textContent : '',
-        completed: item.querySelector('.subtask-checkbox') ? item.querySelector('.subtask-checkbox').checked : false
-      };
-    })
+    subtasks: subtasks
   };
   
   // Kiểm tra quá hạn trước khi gửi đến server
@@ -6189,6 +6279,12 @@ function syncDataInBackground() {
           const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
           
           allTasks.forEach(t => {
+            const plan = t.planValue || 0;
+            const actual = t.actualValue || 0;
+            if (plan > 0 && actual < plan) {
+              t.completionDate = ''; // Tự động xóa ngày làm xong nếu thực tế chưa đạt kế hoạch
+            }
+            
             if (t.completionDate && t.dueDate) {
               const compNum = t.completionDate.replace(/-/g, '');
               const dueParts = t.dueDate.split('/');
@@ -6201,9 +6297,12 @@ function syncDataInBackground() {
               const dueParts = t.dueDate.split('/');
               if (dueParts.length === 3) {
                 const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
-                if (todayNum > dueNum) {
-                  t.status = 'overdue';
-                }
+                t.status = todayNum > dueNum ? 'overdue' : 'inprogress';
+              }
+              if (plan > 0) {
+                t.progress = Math.min(99, Math.round((actual / plan) * 100));
+              } else {
+                t.progress = 0;
               }
             }
           });

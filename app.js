@@ -167,8 +167,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else {
         // Trạng thái chưa hoàn thành
+        task.completionDate = ''; // Xóa ngày hoàn thành nếu thực tế nhỏ hơn kế hoạch
         if (plan > 0) {
           task.progress = Math.min(99, Math.round((val / plan) * 100));
+        } else {
+          task.progress = 0;
         }
         
         // Tự động kiểm tra quá hạn
@@ -269,7 +272,13 @@ document.addEventListener('DOMContentLoaded', () => {
           const completed = task.subtasks.filter(s => s.completed).length;
           task.progress = Math.round((completed / task.subtasks.length) * 100);
         } else {
-          task.progress = 0;
+          const plan = task.planValue || 0;
+          const actual = task.actualValue || 0;
+          if (plan > 0) {
+            task.progress = Math.min(99, Math.round((actual / plan) * 100));
+          } else {
+            task.progress = 0;
+          }
         }
       }
       
@@ -456,6 +465,12 @@ async function loadAllData() {
     const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
     
     allTasks.forEach(t => {
+      const plan = t.planValue || 0;
+      const actual = t.actualValue || 0;
+      if (plan > 0 && actual < plan) {
+        t.completionDate = ''; // Tự động xóa ngày làm xong nếu thực tế chưa đạt kế hoạch
+      }
+      
       // Nếu có ngày làm xong và hạn hoàn thành, kiểm tra xem có hoàn thành quá hạn không
       if (t.completionDate && t.dueDate) {
         const compNum = t.completionDate.replace(/-/g, '');
@@ -481,6 +496,11 @@ async function loadAllData() {
           } else {
             t.status = 'inprogress';
           }
+        }
+        if (plan > 0) {
+          t.progress = Math.min(99, Math.round((actual / plan) * 100));
+        } else {
+          t.progress = 0;
         }
       }
     });
@@ -2684,6 +2704,12 @@ async function syncDataInBackground() {
         const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
         
         allTasks.forEach(t => {
+          const plan = t.planValue || 0;
+          const actual = t.actualValue || 0;
+          if (plan > 0 && actual < plan) {
+            t.completionDate = ''; // Tự động xóa ngày làm xong nếu thực tế chưa đạt kế hoạch
+          }
+          
           if (t.completionDate && t.dueDate) {
             const compNum = t.completionDate.replace(/-/g, '');
             const dueParts = t.dueDate.split('/');
@@ -2696,9 +2722,12 @@ async function syncDataInBackground() {
             const dueParts = t.dueDate.split('/');
             if (dueParts.length === 3) {
               const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
-              if (todayNum > dueNum) {
-                t.status = 'overdue';
-              }
+              t.status = todayNum > dueNum ? 'overdue' : 'inprogress';
+            }
+            if (plan > 0) {
+              t.progress = Math.min(99, Math.round((actual / plan) * 100));
+            } else {
+              t.progress = 0;
             }
           }
         });

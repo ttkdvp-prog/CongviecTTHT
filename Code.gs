@@ -675,6 +675,36 @@ function getTasks() {
         }
       }
       
+      let completionDate = "";
+      if (row[15]) {
+        // Đảm bảo định dạng yyyy-MM-dd để dùng cho <input type="date"> của client
+        const dateValue = row[15];
+        if (dateValue instanceof Date) {
+          const day = dateValue.getDate().toString().padStart(2, '0');
+          const month = (dateValue.getMonth() + 1).toString().padStart(2, '0');
+          const year = dateValue.getFullYear();
+          completionDate = `${year}-${month}-${day}`;
+        } else {
+          let dateStr = String(dateValue).trim();
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+            const parts = dateStr.split('/');
+            completionDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          } else if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+            completionDate = dateStr.substring(0, 10);
+          } else {
+            try {
+              const d = new Date(dateStr);
+              if (!isNaN(d.getTime())) {
+                const day = d.getDate().toString().padStart(2, '0');
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                const year = d.getFullYear();
+                completionDate = `${year}-${month}-${day}`;
+              }
+            } catch(e) {}
+          }
+        }
+      }
+      
       const task = {
         id: taskId,
         title: String(row[1]),
@@ -689,7 +719,7 @@ function getTasks() {
         planValue: row[11] !== undefined && row[11] !== "" ? Number(row[11]) : 0,
         actualValue: row[12] !== undefined && row[12] !== "" ? Number(row[12]) : 0,
         notes: row[14] !== undefined ? String(row[14]) : "",
-        completionDate: row[15] !== undefined ? String(row[15]) : "",
+        completionDate: completionDate,
         subtasks: subtasks,
         assignees: assignees,
         attachments: attachments
@@ -756,7 +786,7 @@ function addTask(taskData) {
       taskData.priority || "medium",
       taskData.startDate || "",
       taskData.dueDate || "",
-      taskData.subtasks && taskData.subtasks.length > 0 ? "0" : "",
+      taskData.progress !== undefined ? taskData.progress.toString() : ((taskData.status === "done" || taskData.status === "done_late") ? "100" : "0"),
       taskData.planValue !== undefined ? Number(taskData.planValue) : 0,
       taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0,
       ratioFormula,
@@ -895,11 +925,12 @@ function updateTask(taskData) {
     }
 
     // Tính toán tiến độ
-    let progress = 0;
+    let progress = taskData.progress !== undefined ? Number(taskData.progress) : 0;
+    if (isNaN(progress)) progress = 0;
     if (taskData.subtasks && taskData.subtasks.length > 0) {
       const completed = taskData.subtasks.filter(sub => sub.completed).length;
       progress = Math.round((completed / taskData.subtasks.length) * 100);
-    } else if (taskData.status === "done") {
+    } else if (taskData.status === "done" || taskData.status === "done_late") {
       progress = 100;
     } else if (taskData.status === "cancelled") {
       progress = 0;
