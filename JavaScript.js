@@ -1098,21 +1098,14 @@ function renderListView(tasks) {
     const row = document.createElement('tr');
     row.dataset.id = task.id;
     
-    // Tạo HTML cho người phụ trách
-    let assigneesHtml = '';
+    // Tạo text tên người phụ trách (hiển thị dạng text giống cột Mô tả, tự xuống dòng)
+    let assigneesText = '';
     if (task.assignees && task.assignees.length > 0) {
-      const assigneeAvatars = task.assignees.map(assigneeId => {
+      assigneesText = task.assignees.map(assigneeId => {
         const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
-        return user ? `<div class="avatar small" title="${user.name}">${user.initials}</div>` : '';
-      }).join('');
-      
-      if (assigneeAvatars) {
-        assigneesHtml = `
-          <div class="assignee-list">
-            ${assigneeAvatars}
-          </div>
-        `;
-      }
+        if (!user) return '';
+        return `${user.name}<br><span style="opacity:0.7;">(${user.id}) [${user.initials}]</span>`;
+      }).filter(n => n).join('<br>');
     }
     
     // Tạo HTML cho tệp đính kèm CÓ KHẢ NĂNG CLICK ĐỂ XEM
@@ -1159,7 +1152,7 @@ function renderListView(tasks) {
       </td>
       <td style="max-width: 250px; white-space: normal; word-break: break-word; color: var(--text3);">${task.description || ''}</td>
       <td><span class="status-cell ${task.status}">${getStatusText(task.status)}</span></td>
-      <td>${assigneesHtml}</td>
+      <td style="max-width: 200px; white-space: normal; word-break: break-word; color: var(--text3);">${assigneesText}</td>
       <td>${formatDateDisplay(task.startDate) || ''}</td>
       <td>${task.status === 'overdue' ? 
           `<span class="overdue">${formatDateDisplay(task.dueDate) || ''}</span>` : 
