@@ -2124,9 +2124,6 @@ function calculateAndRenderStats() {
     }
   }
 }
-    }
-  }
-}
 
 /* ===== Note Tasks View ===== */
 function populateNoteTeamFilter() {
@@ -2134,9 +2131,9 @@ function populateNoteTeamFilter() {
   const modalNoteTeam = $('note-team');
   if (!noteTeamFilter || !modalNoteTeam) return;
   
-  const options = '<option value="">Tất cả tổ</option>' + allTeams.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+  const options = '<option value="">Tất cả tổ</option>' + allTeams.map(t => `<option value="${t}">${t}</option>`).join('');
   noteTeamFilter.innerHTML = options;
-  modalNoteTeam.innerHTML = '<option value="">-- Chọn tổ --</option>' + allTeams.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+  modalNoteTeam.innerHTML = '<option value="">-- Chọn tổ --</option>' + allTeams.map(t => `<option value="${t}">${t}</option>`).join('');
 }
 
 function renderNoteTasksView(notes) {
