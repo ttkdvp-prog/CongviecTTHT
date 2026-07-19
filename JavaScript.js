@@ -1994,16 +1994,52 @@ document.addEventListener('DOMContentLoaded', () => {
       
       task.actualValue = val;
       
-      const tr = e.target.closest('tr');
-      if (tr) {
-        const plan = task.planValue || 0;
-        const ratio = plan > 0 ? Math.round((val / plan) * 100) + '%' : '—';
-        const ratioEl = tr.querySelector('.ratio-cell strong');
-        if (ratioEl) {
-          ratioEl.textContent = ratio;
-          ratioEl.style.color = plan > 0 && val >= plan ? '#00c48c' : 'inherit';
+      const plan = task.planValue || 0;
+      if (plan > 0 && val >= plan) {
+        // Tự động chuyển trạng thái hoàn thành
+        task.progress = 100;
+        if (!task.completionDate) {
+          const today = new Date();
+          task.completionDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+        }
+        
+        // Kiểm tra quá hạn
+        if (task.dueDate) {
+          const compNum = task.completionDate.replace(/-/g, '');
+          const dueParts = task.dueDate.split('/');
+          if (dueParts.length === 3) {
+            const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+            task.status = compNum > dueNum ? 'done_late' : 'done';
+          } else {
+            task.status = 'done';
+          }
+        } else {
+          task.status = 'done';
+        }
+      } else {
+        // Trạng thái chưa hoàn thành
+        if (plan > 0) {
+          task.progress = Math.min(99, Math.round((val / plan) * 100));
+        }
+        
+        // Tự động kiểm tra quá hạn
+        if (task.dueDate) {
+          const today = new Date();
+          const todayNum = today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
+          const dueParts = task.dueDate.split('/');
+          if (dueParts.length === 3) {
+            const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+            task.status = todayNum > dueNum ? 'overdue' : 'inprogress';
+          } else {
+            task.status = 'inprogress';
+          }
+        } else {
+          task.status = 'inprogress';
         }
       }
+      
+      // Vẽ lại giao diện ngay lập tức
+      renderTasks(allTasks);
       
       google.script.run
         .withSuccessHandler(function(result) {
@@ -2013,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             updateTaskInCache(task);
             updateTaskCounts();
-            showNotification('Đã cập nhật số liệu thực hiện!', 'success');
+            showNotification('Đã cập nhật số liệu và trạng thái công việc!', 'success');
           }
         })
         .withFailureHandler(function(error) {
@@ -3033,6 +3069,9 @@ document.querySelector('.add-attachment-btn').addEventListener('click', function
       this.classList.remove('pulse');
     });
   });
+  
+  // Tự động đồng bộ dữ liệu ngầm mỗi 8 giây
+  setInterval(syncDataInBackground, 8000);
 });
 
 
@@ -6127,4 +6166,53 @@ function autoResizeTextarea(el) {
   el.style.height = el.scrollHeight + 'px';
 }
 window.autoResizeTextarea = autoResizeTextarea;
+
+function syncDataInBackground() {
+  // Không đồng bộ khi đang chỉnh sửa
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.getAttribute('contenteditable') === 'true')) {
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(function(tasks) {
+      if (Array.isArray(tasks) && tasks.length > 0) {
+        // Chỉ đồng bộ khi thực sự có thay đổi số liệu hoặc trạng thái hoặc ghi chú
+        const currentHash = JSON.stringify(allTasks.map(t => ({ id: t.id, actual: t.actualValue, status: t.status, notes: t.notes, compDate: t.completionDate })));
+        const newHash = JSON.stringify(tasks.map(t => ({ id: t.id, actual: t.actualValue, status: t.status, notes: t.notes, compDate: t.completionDate })));
+        
+        if (currentHash !== newHash) {
+          console.log("Phát hiện thay đổi số liệu từ thiết bị khác, tự động cập nhật...");
+          allTasks = tasks;
+          
+          // Chạy lại logic kiểm tra quá hạn
+          const today = new Date();
+          const todayNum = today.getFullYear() + (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0');
+          
+          allTasks.forEach(t => {
+            if (t.completionDate && t.dueDate) {
+              const compNum = t.completionDate.replace(/-/g, '');
+              const dueParts = t.dueDate.split('/');
+              if (dueParts.length === 3) {
+                const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+                t.status = compNum > dueNum ? 'done_late' : 'done';
+                t.progress = 100;
+              }
+            } else if (!t.completionDate && t.dueDate && t.status !== 'done') {
+              const dueParts = t.dueDate.split('/');
+              if (dueParts.length === 3) {
+                const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+                if (todayNum > dueNum) {
+                  t.status = 'overdue';
+                }
+              }
+            }
+          });
+          
+          renderTasks(allTasks);
+        }
+      }
+    })
+    .getTasks();
+}
 </script>
