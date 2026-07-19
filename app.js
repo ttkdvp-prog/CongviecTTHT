@@ -807,14 +807,20 @@ function populateAssigneePicker(preselectedIds = []) {
   const picker = $('assignee-picker');
   if (!picker) return;
 
+  const teamFilter = ($('modal-team-filter') ? $('modal-team-filter').value : '');
+  const searchFilter = ($('modal-assignee-search') ? $('modal-assignee-search').value : '').toLowerCase().trim();
+
   // Remember currently selected assignees
   let selectedIds = [...document.querySelectorAll('.assignee-chip.selected')].map(c => c.dataset.id);
   if (preselectedIds.length > 0) {
     selectedIds = [...new Set([...selectedIds, ...preselectedIds])];
   }
 
-  const teamFilter = ($('modal-team-filter') ? $('modal-team-filter').value : '');
-  const searchFilter = ($('modal-assignee-search') ? $('modal-assignee-search').value : '').toLowerCase().trim();
+  // Nếu có lọc theo tổ, chỉ giữ lại những người thuộc tổ đó (không cho chọn/giữ người từ tổ khác)
+  if (teamFilter) {
+    const teamUserIds = new Set(users.filter(u => u.team === teamFilter).map(u => u.id));
+    selectedIds = selectedIds.filter(id => teamUserIds.has(id));
+  }
 
   // Always show already-selected users regardless of filter
   const alreadySelected = users.filter(u => selectedIds.includes(u.id));
@@ -841,25 +847,13 @@ function populateAssigneePicker(preselectedIds = []) {
     filteredUsers = filteredUsers.filter(u => u.name.toLowerCase().includes(searchFilter) || (u.id && u.id.toLowerCase().includes(searchFilter)));
   }
 
-  // Build chips: show filtered users + any previously selected users not in filtered list
-  const filteredIds = new Set(filteredUsers.map(u => u.id));
-  const extraSelected = users.filter(u => selectedIds.includes(u.id) && !filteredIds.has(u.id));
-
   let html = '';
-  if (filteredUsers.length > 0 || extraSelected.length > 0) {
+  if (filteredUsers.length > 0) {
     // Show filtered users grouped by team if a team is selected
     html += filteredUsers.map(u => {
       const isSelected = selectedIds.includes(u.id) ? ' selected' : '';
       return `<div class="assignee-chip${isSelected}" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}</div>`;
     }).join('');
-
-    // Append already-selected users from other teams (dimmed indicator)
-    if (extraSelected.length > 0) {
-      html += `<div class="assignee-picker-divider"><span>Đã chọn từ tổ khác</span></div>`;
-      html += extraSelected.map(u => {
-        return `<div class="assignee-chip selected other-team" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}</div>`;
-      }).join('');
-    }
   } else {
     html = '<span style="color:var(--text3);font-size:.85rem">Không tìm thấy nhân viên</span>';
   }
