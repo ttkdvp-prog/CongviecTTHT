@@ -108,12 +108,17 @@ function include(filename) {
 
 const SPREADSHEET_ID = "1r2lWfbeHh7LXqOOH1Dmgd4IEwgudw3kGqbk3UORKDVc";
 
+// Cache spreadsheet trong cùng 1 lần thực thi
+let _cachedSs = null;
+
 function getSs() {
+  if (_cachedSs) return _cachedSs;
   try {
-    return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
+    _cachedSs = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(SPREADSHEET_ID);
   } catch (e) {
-    return SpreadsheetApp.openById(SPREADSHEET_ID);
+    _cachedSs = SpreadsheetApp.openById(SPREADSHEET_ID);
   }
+  return _cachedSs;
 }
 
 // Khởi tạo hoặc lấy Sheet cần thiết
@@ -252,8 +257,13 @@ function initializeSampleData() {
   }
 }
 
+// Cache dữ liệu users và teams trong cùng 1 lần thực thi
+let _cachedUsers = null;
+let _cachedTeamsData = null;
+
 // Hàm lấy dữ liệu người dùng có kèm thông tin Tổ (Team)
 function getUsers() {
+  if (_cachedUsers) return _cachedUsers;
   try {
     const ss = getSs();
     const usersSheet = ss.getSheetByName("Users");
@@ -265,7 +275,7 @@ function getUsers() {
     const usersData = usersSheet.getRange(2, 1, lastRow - 1, 3).getValues();
     const nameToTeam = getTeamsData();
     
-    return usersData.map(row => {
+    _cachedUsers = usersData.map(row => {
       const name = String(row[1]);
       let team = String(row[2]).trim();
       // Nếu cột C (Viết tắt/Tổ) trống hoặc quá ngắn, thử tra cứu từ sheet "To"
@@ -275,10 +285,11 @@ function getUsers() {
       return {
         id: String(row[0]),
         name: name,
-        initials: team, // Trả về thông tin Tổ
+        initials: team,
         team: team
       };
     });
+    return _cachedUsers;
   } catch(e) {
     Logger.log("Lỗi khi lấy danh sách người dùng: " + e.toString());
     return [];
@@ -287,6 +298,7 @@ function getUsers() {
 
 // Lấy thông tin ánh xạ Họ tên -> Tổ từ sheet "To"
 function getTeamsData() {
+  if (_cachedTeamsData) return _cachedTeamsData;
   try {
     const ss = getSs();
     const toSheet = ss.getSheetByName("To");
@@ -296,15 +308,15 @@ function getTeamsData() {
     if (lastRow <= 1) return {};
     
     const data = toSheet.getRange(2, 1, lastRow - 1, 4).getValues();
-    const nameToTeam = {};
+    _cachedTeamsData = {};
     data.forEach(row => {
       const team = row[0]; // Cột A: Tổ
       const name = row[2]; // Cột C: Họ và tên
       if (name && team) {
-        nameToTeam[String(name).trim().toLowerCase()] = String(team).trim();
+        _cachedTeamsData[String(name).trim().toLowerCase()] = String(team).trim();
       }
     });
-    return nameToTeam;
+    return _cachedTeamsData;
   } catch(e) {
     Logger.log("Lỗi lấy thông tin ánh xạ Tổ: " + e.toString());
     return {};
