@@ -623,7 +623,7 @@ function initDragDrop() {
 function renderListView(tasks) {
   const list = tasks || allTasks;
   const tbody = $('task-table-body');
-  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="12" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
+  if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="13" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
     const assignees = (t.assignees || []).map(a => { const u = users.find(u => String(u.id).trim().toUpperCase() === String(a).trim().toUpperCase()); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
     const p = t.progress || 0;
@@ -635,6 +635,7 @@ function renderListView(tasks) {
     
     return `<tr>
       <td><strong>${t.title}</strong></td>
+      <td style="max-width: 250px; white-space: normal; word-break: break-word; color: var(--text3);">${t.description || ''}</td>
       <td><span class="badge badge-${t.status}">${statusText(t.status)}</span></td>
       <td>${assignees}</td>
       <td>${fmtDate(t.startDate)}</td>

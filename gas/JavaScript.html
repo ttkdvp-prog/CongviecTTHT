@@ -1158,7 +1158,7 @@ function renderListView(tasks) {
           ${task.subtasks && task.subtasks.length > 0 ? `<button class="toggle-subtasks-btn"><i class="fas fa-chevron-down"></i></button>` : ''}
         </div>
       </td>
-      <td>${task.description || ''}</td>
+      <td style="max-width: 250px; white-space: normal; word-break: break-word; color: var(--text3);">${task.description || ''}</td>
       <td>${assigneesHtml}</td>
       <td>${formatDateDisplay(task.startDate) || ''}</td>
       <td>${task.status === 'overdue' ? 
