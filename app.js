@@ -2024,6 +2024,18 @@ function isTaskInTeam(taskTeam, filterTeam) {
   return teams.includes(cleanFilter);
 }
 
+// Helper: lấy tổ của công việc, ưu tiên task.team từ sheet, fallback sang tổ của assignee đầu tiên
+function getResolvedTaskTeam(task) {
+  if (task.team && task.team.trim()) {
+    return task.team.split(',')[0].trim();
+  }
+  const taskAssignees = task.assignees || [];
+  if (taskAssignees.length === 0) return 'Chưa phân tổ';
+  const firstId = taskAssignees[0];
+  const user = users.find(u => String(u.id).trim().toUpperCase() === String(firstId).trim().toUpperCase());
+  return (user && user.team) ? user.team : 'Chưa phân tổ';
+}
+
 function calculateAndRenderStats() {
   const teamFilterVal = $('stats-team-filter') ? $('stats-team-filter').value : '';
   const monthFilterVal = $('stats-month-filter') ? $('stats-month-filter').value : ''; // format YYYY-MM
@@ -2053,8 +2065,11 @@ function calculateAndRenderStats() {
     let totalTeamBacklog = 0, totalTeamOverdue = 0, totalTeamCumulativeBacklog = 0;
 
     teamsToProcess.forEach(team => {
-      // Lọc các công việc thuộc tổ (sử dụng thuộc tính team của công việc trực tiếp từ sheet Tasks)
-      const teamTasks = allTasks.filter(t => isTaskInTeam(t.team, team));
+      // Lọc các công việc thuộc tổ - dùng task.team nếu có, fallback sang assignees
+      const teamTasks = allTasks.filter(t => {
+        const resolvedTeam = getResolvedTaskTeam(t);
+        return isTeamMatch(resolvedTeam, team);
+      });
       
       let assignedInMonth = 0;
       let inprogressInMonth = 0;
@@ -2244,11 +2259,13 @@ function calculateAndRenderStats() {
       if (matchingTasks.length === 0) {
         jobStatsTbody.innerHTML = `<tr><td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-info" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Không tìm thấy công việc nào khớp từ khoá "${keyword}" trong tháng này</td></tr>`;
       } else {
-        matchingTasks.forEach(task => {
-          // Lấy tổ đầu tiên làm tổ chính phụ trách công việc
-          const team = (task.team || '').split(',')[0].trim() || 'Chưa phân tổ';
+        const groupedSummary = {};
 
-          if (teamFilterVal && !isTaskInTeam(team, teamFilterVal)) {
+        matchingTasks.forEach(task => {
+          // Lấy tổ chính phụ trách công việc (có fallback)
+          const team = getResolvedTaskTeam(task);
+
+          if (teamFilterVal && !isTeamMatch(team, teamFilterVal)) {
             return;
           }
 

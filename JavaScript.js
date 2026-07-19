@@ -5393,6 +5393,20 @@ function isTaskInTeam(taskTeam, filterTeam) {
   return teams.includes(cleanFilter);
 }
 
+// Helper: lấy tổ của công việc, ưu tiên task.team từ sheet, fallback sang tổ của assignee đầu tiên
+function getResolvedTaskTeam(task) {
+  // Ưu tiên dùng task.team nếu có
+  if (task.team && task.team.trim()) {
+    return task.team.split(',')[0].trim();
+  }
+  // Fallback: tìm tổ từ người phụ trách đầu tiên
+  const taskAssignees = task.assignees || [];
+  if (taskAssignees.length === 0) return 'Chưa phân tổ';
+  const firstId = taskAssignees[0];
+  const user = users.find(u => String(u.id).trim().toUpperCase() === String(firstId).trim().toUpperCase());
+  return (user && user.team) ? user.team : 'Chưa phân tổ';
+}
+
 function calculateAndRenderStats() {
   const statsTeamEl = document.getElementById('stats-team-filter');
   const statsMonthEl = document.getElementById('stats-month-filter');
@@ -5425,8 +5439,11 @@ function calculateAndRenderStats() {
     let totalTeamBacklog = 0, totalTeamOverdue = 0, totalTeamCumulativeBacklog = 0;
 
     teamsToProcess.forEach(team => {
-      // Lọc các công việc thuộc tổ (sử dụng thuộc tính team của công việc trực tiếp từ sheet Tasks)
-      const teamTasks = allTasks.filter(t => isTaskInTeam(t.team, team));
+      // Lọc các công việc thuộc tổ - dùng task.team nếu có, fallback sang assignees
+      const teamTasks = allTasks.filter(t => {
+        const resolvedTeam = getResolvedTaskTeam(t);
+        return isTeamMatch(resolvedTeam, team);
+      });
       
       let assignedInMonth = 0;
       let inprogressInMonth = 0;
@@ -5616,10 +5633,10 @@ function calculateAndRenderStats() {
         const groupedSummary = {};
 
         matchingTasks.forEach(task => {
-          // Lấy tổ đầu tiên làm tổ chính phụ trách công việc
-          const team = (task.team || '').split(',')[0].trim() || 'Chưa phân tổ';
+          // Lấy tổ chính phụ trách công việc (có fallback)
+          const team = getResolvedTaskTeam(task);
 
-          if (teamFilterVal && !isTaskInTeam(team, teamFilterVal)) {
+          if (teamFilterVal && !isTeamMatch(team, teamFilterVal)) {
             return;
           }
 
