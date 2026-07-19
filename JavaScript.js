@@ -2209,6 +2209,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (statsMonthSel) {
     statsMonthSel.addEventListener('change', calculateAndRenderStats);
   }
+  const statsJobKeyword = document.getElementById('stats-job-keyword');
+  if (statsJobKeyword) {
+    statsJobKeyword.addEventListener('input', calculateAndRenderStats);
+  }
 
   setupDocForm();
   setupDocFilters();
@@ -2999,6 +3003,12 @@ document.querySelector('.add-attachment-btn').addEventListener('click', function
 
 // Hàm lọc dữ liệu phía client
 function filterTasksClientSide() {
+  // Nếu đang xem thống kê, tự động cập nhật thống kê khi lọc/tìm kiếm
+  const statsView = document.getElementById('stats-view');
+  if (statsView && statsView.style.display !== 'none') {
+    calculateAndRenderStats();
+  }
+
   // Lấy các giá trị lọc
   const assigneeValue = assigneeFilter.value;
   const dateValue = dateFilter.value;
@@ -5569,7 +5579,14 @@ function calculateAndRenderStats() {
   const jobStatsTbody = document.getElementById('job-stats-tbody');
   const jobStatsTfoot = document.getElementById('job-stats-tfoot');
   const jobKeywordEl = document.getElementById('stats-job-keyword');
-  const keyword = jobKeywordEl ? jobKeywordEl.value.trim() : '';
+  const globalSearchEl = document.getElementById('search-input') || document.getElementById('global-search');
+  
+  let keyword = '';
+  if (jobKeywordEl && jobKeywordEl.value.trim()) {
+    keyword = jobKeywordEl.value.trim();
+  } else if (globalSearchEl && globalSearchEl.value.trim()) {
+    keyword = globalSearchEl.value.trim();
+  }
 
   if (jobStatsTbody && jobStatsTfoot) {
     jobStatsTbody.innerHTML = '';

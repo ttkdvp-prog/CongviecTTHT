@@ -344,6 +344,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (statsMonthSel) {
     statsMonthSel.addEventListener('change', calculateAndRenderStats);
   }
+  const statsJobKeyword = $('stats-job-keyword');
+  if (statsJobKeyword) {
+    statsJobKeyword.addEventListener('input', calculateAndRenderStats);
+  }
 });
 
 // Tự động điều chỉnh độ cao của textarea theo nội dung
@@ -1013,6 +1017,9 @@ function setupFilters() {
 }
 
 function filterAndRender() {
+  if ($('stats-view') && $('stats-view').classList.contains('active')) {
+    calculateAndRenderStats();
+  }
   const keyword = ($('global-search').value || '').toLowerCase().trim();
   const assignee = $('kanban-assignee-filter').value;
   const priority = $('kanban-priority-filter').value;
@@ -2207,7 +2214,14 @@ function calculateAndRenderStats() {
   const jobStatsTbody = $('job-stats-tbody');
   const jobStatsTfoot = $('job-stats-tfoot');
   const jobKeywordEl = $('stats-job-keyword');
-  const keyword = jobKeywordEl ? jobKeywordEl.value.trim() : '';
+  const globalSearchEl = $('search-input') || $('global-search');
+  
+  let keyword = '';
+  if (jobKeywordEl && jobKeywordEl.value.trim()) {
+    keyword = jobKeywordEl.value.trim();
+  } else if (globalSearchEl && globalSearchEl.value.trim()) {
+    keyword = globalSearchEl.value.trim();
+  }
 
   if (jobStatsTbody && jobStatsTfoot) {
     jobStatsTbody.innerHTML = '';
