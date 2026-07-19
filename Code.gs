@@ -1658,3 +1658,14 @@ function deleteNoteTask(taskId) {
     return { success: false, message: "Lỗi: " + e.toString() };
   }
 }
+
+function formatDateObj(dateValue) {
+  if (!dateValue) return '';
+  if (dateValue instanceof Date) {
+    const day = dateValue.getDate().toString().padStart(2, '0');
+    const month = (dateValue.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateValue.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  return String(dateValue);
+}

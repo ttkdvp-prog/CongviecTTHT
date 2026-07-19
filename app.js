@@ -2384,7 +2384,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res && res.success) {
           if (!id && res.taskId) {
             const idx = allNoteTasks.findIndex(t => t.id === optimisticTask.id);
-            if (idx > -1) allNoteTasks[idx].id = res.taskId;
+            if (idx > -1) {
+              allNoteTasks[idx].id = res.taskId;
+              renderNoteTasksView();
+            }
           }
           toast('Đã lưu công việc lưu ý!', 'success');
         } else {
