@@ -780,17 +780,9 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="note-team">Tổ <span class="required">*</span></label>
-              <select id="note-team" required>
+              <label for="note-team">Tổ</label>
+              <select id="note-team">
                 <option value="">-- Chọn tổ --</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="note-status">Trạng thái</label>
-              <select id="note-status">
-                <option value="inprogress">Đang thực hiện</option>
-                <option value="done">Hoàn thành</option>
-                <option value="overdue">Quá hạn</option>
               </select>
             </div>
           </div>
@@ -804,14 +796,26 @@
               <input type="date" id="note-due">
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="note-completion">Ngày làm xong</label>
-              <input type="date" id="note-completion">
+          <div id="note-edit-fields" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="note-status">Trạng thái</label>
+                <select id="note-status">
+                  <option value="inprogress">Đang thực hiện</option>
+                  <option value="done">Hoàn thành</option>
+                  <option value="overdue">Quá hạn</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="note-notes">Ghi chú</label>
-              <input type="text" id="note-notes" placeholder="Ghi chú thêm..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text);">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="note-completion">Ngày làm xong</label>
+                <input type="date" id="note-completion">
+              </div>
+              <div class="form-group">
+                <label for="note-notes">Ghi chú</label>
+                <input type="text" id="note-notes" placeholder="Ghi chú thêm..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text);">
+              </div>
             </div>
           </div>
           <div class="form-actions">

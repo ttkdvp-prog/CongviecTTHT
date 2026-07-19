@@ -5727,6 +5727,8 @@ function openNoteModal(id) {
   
   form.reset();
   
+  const editFields = $('note-edit-fields');
+  
   if (id) {
     const t = allNoteTasks.find(x => x.id === id);
     if (t) {
@@ -5740,11 +5742,13 @@ function openNoteModal(id) {
       $('note-due').value = toInputDate(t.dueDate);
       $('note-completion').value = toInputDate(t.completionDate);
       $('note-notes').value = t.notes || '';
+      if (editFields) editFields.style.display = 'block';
     }
   } else {
     title.innerHTML = '<i class="fas fa-plus-circle"></i> Thêm việc lưu ý mới';
     $('note-id').value = '';
     $('note-status').value = 'inprogress';
+    if (editFields) editFields.style.display = 'none';
   }
   
   modal.classList.add('show');

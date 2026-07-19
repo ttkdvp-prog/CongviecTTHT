@@ -699,17 +699,9 @@
             </div>
             <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
               <div class="form-group" style="flex: 1;">
-                <label for="note-team">Tổ <span class="required">*</span></label>
-                <select id="note-team" required style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; cursor: pointer; outline: none;">
+                <label for="note-team">Tổ</label>
+                <select id="note-team" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; cursor: pointer; outline: none;">
                   <option value="">-- Chọn tổ --</option>
-                </select>
-              </div>
-              <div class="form-group" style="flex: 1;">
-                <label for="note-status">Trạng thái</label>
-                <select id="note-status" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; cursor: pointer; outline: none;">
-                  <option value="inprogress">Đang thực hiện</option>
-                  <option value="done">Hoàn thành</option>
-                  <option value="overdue">Quá hạn</option>
                 </select>
               </div>
             </div>
@@ -723,14 +715,26 @@
                 <input type="date" id="note-due" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
               </div>
             </div>
-            <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
-              <div class="form-group" style="flex: 1;">
-                <label for="note-completion">Ngày làm xong</label>
-                <input type="date" id="note-completion" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+            <div id="note-edit-fields" style="display: none;">
+              <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
+                <div class="form-group" style="flex: 1;">
+                  <label for="note-status">Trạng thái</label>
+                  <select id="note-status" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; cursor: pointer; outline: none;">
+                    <option value="inprogress">Đang thực hiện</option>
+                    <option value="done">Hoàn thành</option>
+                    <option value="overdue">Quá hạn</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group" style="flex: 1;">
-                <label for="note-notes">Ghi chú</label>
-                <input type="text" id="note-notes" placeholder="Ghi chú thêm..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
+                <div class="form-group" style="flex: 1;">
+                  <label for="note-completion">Ngày làm xong</label>
+                  <input type="date" id="note-completion" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label for="note-notes">Ghi chú</label>
+                  <input type="text" id="note-notes" placeholder="Ghi chú thêm..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+                </div>
               </div>
             </div>
             <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
