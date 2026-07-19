@@ -1018,6 +1018,14 @@ function setupSearch() {
     clearTimeout(timer);
     timer = setTimeout(() => filterAndRender(), 300);
   });
+  
+  const assigneeSearchEl = $('assignee-search-input');
+  if (assigneeSearchEl) {
+    assigneeSearchEl.addEventListener('input', e => {
+      clearTimeout(timer);
+      timer = setTimeout(() => filterAndRender(), 300);
+    });
+  }
 }
 
 function setupFilters() {
@@ -1033,6 +1041,8 @@ function filterAndRender() {
   const assignee = $('kanban-assignee-filter').value;
   const priority = $('kanban-priority-filter').value;
   const team = $('global-team-filter').value;
+  const assigneeSearchEl = $('assignee-search-input');
+  const assigneeSearchTerm = assigneeSearchEl ? (assigneeSearchEl.value || '').toLowerCase().trim() : '';
 
   let filtered = [...allTasks];
   if (keyword) filtered = filtered.filter(t => t.title.toLowerCase().includes(keyword) || (t.description || '').toLowerCase().includes(keyword));
@@ -1040,6 +1050,18 @@ function filterAndRender() {
   if (priority) filtered = filtered.filter(t => t.priority === priority);
   if (team) {
     filtered = filtered.filter(t => isTaskInTeam(t.team, team));
+  }
+  if (assigneeSearchTerm) {
+    filtered = filtered.filter(task => {
+      if (!task.assignees || task.assignees.length === 0) return false;
+      return task.assignees.some(assigneeId => {
+        const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
+        if (!user) return false;
+        return user.name.toLowerCase().includes(assigneeSearchTerm) ||
+               user.id.toLowerCase().includes(assigneeSearchTerm) ||
+               (user.initials && user.initials.toLowerCase().includes(assigneeSearchTerm));
+      });
+    });
   }
 
   renderDashboard(filtered);

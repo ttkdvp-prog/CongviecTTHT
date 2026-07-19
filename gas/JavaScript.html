@@ -10,7 +10,7 @@ const viewButtons = document.querySelectorAll('.view-btn, .nav-link');
 const kanbanView = document.getElementById('kanban-view');
 const listView = document.getElementById('list-view');
 const ganttView = document.getElementById('gantt-view');
-const searchInput = document.getElementById('search-input');
+const searchInput = document.getElementById('search-input') || document.getElementById('global-search');
 const searchBtn = document.getElementById('search-btn');
 const loadingOverlay = document.getElementById('loading-overlay');
 const assigneeFilter = document.getElementById('assignee-filter');
@@ -3156,23 +3156,31 @@ function updateDateFilterLabel() {
 // Cập nhật sự kiện cho các bộ lọc
 function setupFilterEvents() {
   // Bộ lọc người phụ trách
-  assigneeFilter.addEventListener('change', filterTasksClientSide);
+  if (assigneeFilter) {
+    assigneeFilter.addEventListener('change', filterTasksClientSide);
+  }
   
   // Bộ lọc ngày
-  dateFilter.addEventListener('change', filterTasksClientSide);
+  if (dateFilter) {
+    dateFilter.addEventListener('change', filterTasksClientSide);
+  }
   
   // Ô tìm kiếm - lọc khi gõ
-  searchInput.addEventListener('input', debounce(filterTasksClientSide, 300));
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(filterTasksClientSide, 300));
+    
+    // Enter trong ô tìm kiếm
+    searchInput.addEventListener('keyup', e => {
+      if (e.key === 'Enter') {
+        filterTasksClientSide();
+      }
+    });
+  }
   
   // Nút tìm kiếm
-  searchBtn.addEventListener('click', filterTasksClientSide);
-  
-  // Enter trong ô tìm kiếm
-  searchInput.addEventListener('keyup', e => {
-    if (e.key === 'Enter') {
-      filterTasksClientSide();
-    }
-  });
+  if (searchBtn) {
+    searchBtn.addEventListener('click', filterTasksClientSide);
+  }
 
   // Ô tìm kiếm người phụ trách
   const assigneeSearchInput = document.getElementById('assignee-search-input');
