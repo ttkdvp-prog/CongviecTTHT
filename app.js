@@ -2328,7 +2328,7 @@ function calculateAndRenderStats() {
           rowsHtml += `
             <tr>
               <td style="padding: 12px;"><strong>${row.teams}</strong></td>
-              <td style="padding: 12px; color: var(--text2); font-size: 0.9rem;">${row.assigneeNames || ''}</td>
+              <td style="padding: 12px; color: var(--text3);">${row.assigneeNames || ''}</td>
               <td style="padding: 12px; color: var(--text);">${row.title}</td>
               <td style="text-align: right; padding: 12px; font-weight: 500; color: #38bdf8;">${row.plan}</td>
               <td style="text-align: right; padding: 12px; font-weight: 500; color: #34d399;">${row.actual}</td>
