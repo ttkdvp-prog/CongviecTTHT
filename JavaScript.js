@@ -2019,7 +2019,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tự động điều chỉnh độ cao của ghi chú khi gõ
   document.addEventListener('input', e => {
-    if (e.target.classList.contains('table-note-textarea')) {
+    if (e.target.classList.contains('table-note-textarea') || e.target.classList.contains('note-notes-input')) {
       autoResizeTextarea(e.target);
     }
   });
@@ -2109,6 +2109,95 @@ document.addEventListener('DOMContentLoaded', () => {
           loadData(true);
         })
         .updateTask(task);
+    }
+    
+    if (e.target.classList.contains('note-completion-date-input')) {
+      const noteId = e.target.dataset.id;
+      const val = e.target.value || '';
+      const task = allNoteTasks.find(t => t.id === noteId);
+      if (!task) return;
+      
+      task.completionDate = val ? fromInputDate(val) : '';
+      
+      // Tính lại trạng thái
+      if (val) {
+        if (task.dueDate) {
+          const compNum = val.replace(/-/g, '');
+          const dueParts = task.dueDate.split('/');
+          const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
+          if (compNum <= dueNum) {
+            task.status = 'done';
+          } else {
+            task.status = 'overdue';
+          }
+        } else {
+          task.status = 'done';
+        }
+      } else {
+        if (task.dueDate) {
+          const dueParts = task.dueDate.split('/');
+          const dueObj = new Date(dueParts[2], dueParts[1] - 1, dueParts[0]);
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          dueObj.setHours(0,0,0,0);
+          if (dueObj < today) {
+            task.status = 'overdue';
+          } else {
+            task.status = 'inprogress';
+          }
+        } else {
+          task.status = 'inprogress';
+        }
+      }
+      
+      // Cập nhật badge trạng thái trong hàng
+      const tr = e.target.closest('tr');
+      if (tr) {
+        const cells = tr.querySelectorAll('td');
+        if (cells[6]) {
+          cells[6].innerHTML = `<span class="badge badge-${task.status}">${getStatusText(task.status)}</span>`;
+        }
+      }
+      
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            showNotification('Đã cập nhật ngày làm xong!', 'success');
+          } else {
+            loadData(true);
+            showNotification('Lỗi khi cập nhật: ' + (res ? res.message : 'Unknown'), 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          loadData(true);
+          showNotification('Lỗi kết nối: ' + err, 'error', true);
+        })
+        .updateNoteTask(task);
+    }
+    
+    if (e.target.classList.contains('note-notes-input')) {
+      const noteId = e.target.dataset.id;
+      const val = e.target.value || '';
+      const task = allNoteTasks.find(t => t.id === noteId);
+      if (!task) return;
+      
+      if (task.notes === val) return;
+      task.notes = val;
+      
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            showNotification('Đã cập nhật ghi chú!', 'success');
+          } else {
+            loadData(true);
+            showNotification('Lỗi khi cập nhật ghi chú: ' + (res ? res.message : 'Unknown'), 'error');
+          }
+        })
+        .withFailureHandler(function(err) {
+          loadData(true);
+          showNotification('Lỗi kết nối: ' + err, 'error', true);
+        })
+        .updateNoteTask(task);
     }
   });
 
@@ -5706,9 +5795,13 @@ function renderNoteTasksView(notes) {
       <td><span class="badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${t.team || 'Chung'}</span></td>
       <td>${formatDateDisplay(t.startDate)}</td>
       <td>${formatDateDisplay(t.dueDate)}</td>
-      <td>${formatDateDisplay(t.completionDate)}</td>
+      <td>
+        <input type="date" class="note-completion-date-input" value="${toInputDate(t.completionDate) || ''}" data-id="${t.id}" style="width: 130px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.85rem; outline: none; transition: all 0.2s; font-family: inherit;">
+      </td>
       <td><span class="badge badge-${t.status}">${getStatusText(t.status)}</span></td>
-      <td style="max-width:150px;white-space:normal;">${t.notes || ''}</td>
+      <td>
+        <textarea class="note-notes-input" data-id="${t.id}" rows="1" style="width: 100%; min-width: 150px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px 10px; font-size: 0.85rem; outline: none; transition: all 0.2s; font-family: inherit; resize: none; overflow-y: hidden;" oninput="autoResizeTextarea(this)">${t.notes || ''}</textarea>
+      </td>
       <td>
         <div class="table-actions">
           <button class="btn-edit" title="Sửa" onclick="editNoteTask('${t.id}')"><i class="fas fa-pen"></i></button>
@@ -5717,6 +5810,11 @@ function renderNoteTasksView(notes) {
       </td>
     </tr>`;
   }).join('');
+  
+  // Tự động dãn cách các ô ghi chú
+  tbody.querySelectorAll('.note-notes-input').forEach(el => {
+    autoResizeTextarea(el);
+  });
 }
 
 function openNoteModal(id) {
