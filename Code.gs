@@ -692,20 +692,21 @@ function addTask(taskData) {
         ('0' + now.getSeconds()).slice(-2);
     const taskId = "task-" + formattedDate
 
-    // Lấy thông tin người phụ trách để ghi vào các cột D, E, F của sheet Tasks
+    // Lấy thông tin người phụ trách MỘT LẦN DUY NHẤT
+    let allUsers = [];
+    let usersMap = {};
     let assigneeIds = "";
     let assigneeNames = "";
     let assigneeTeams = "";
     if (taskData.assignees && taskData.assignees.length > 0) {
-      try {
-        const allUsers = getUsers();
-        const matchedUsers = taskData.assignees.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
-        assigneeIds = matchedUsers.map(u => u.id).join(', ');
-        assigneeNames = matchedUsers.map(u => u.name).join(', ');
-        assigneeTeams = matchedUsers.map(u => u.team || '').filter(Boolean).join(', ');
-      } catch (err) {
-        Logger.log("Lỗi mapping người phụ trách: " + err.toString());
-      }
+      allUsers = getUsers();
+      allUsers.forEach(user => {
+        usersMap[user.id] = { name: user.name, initials: user.initials };
+      });
+      const matchedUsers = taskData.assignees.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
+      assigneeIds = matchedUsers.map(u => u.id).join(', ');
+      assigneeNames = matchedUsers.map(u => u.name).join(', ');
+      assigneeTeams = matchedUsers.map(u => u.team || '').filter(Boolean).join(', ');
     }
 
     const nextRow = sheets.tasks.getLastRow() + 1;
@@ -743,17 +744,8 @@ function addTask(taskData) {
       sheets.subtasks.getRange(lastRow + 1, 1, subtaskRows.length, 4).setValues(subtaskRows);
     }
     
-    // Thêm người phụ trách
+    // Thêm người phụ trách (dùng usersMap đã cache)
     if (taskData.assignees && taskData.assignees.length > 0) {
-      const allUsers = getUsers();
-      const usersMap = {};
-      allUsers.forEach(user => {
-        usersMap[user.id] = {
-          name: user.name,
-          initials: user.initials
-        };
-      });
-      
       const assigneeRows = [];
       taskData.assignees.forEach(assigneeId => {
         if (usersMap[assigneeId]) {
@@ -798,7 +790,7 @@ function addTask(taskData) {
   }
 }
 
-// Hàm cập nhật công việc
+// Hàm cập nhật công việc (tối ưu tốc độ)
 function updateTask(taskData) {
   try {
     if (!taskData.id) {
@@ -814,62 +806,56 @@ function updateTask(taskData) {
     
     for (let i = 0; i < tasksValues.length; i++) {
       if (tasksValues[i][0] === taskId) {
-        taskRowIndex = i + 2; // +2 do index bắt đầu từ 0 và dòng đầu tiên là header
+        taskRowIndex = i + 2;
         break;
       }
     }
     
     if (taskRowIndex === -1) {
-      return { success: false, message: "Không tìm thấy công việc" };
+      return { success: false, message: "Không tìm thấy công việc với ID: " + taskId };
     }
     
-    // Chuẩn hóa định dạng ngày dd/MM/yyyy
+    // Định dạng ngày
     let startDate = taskData.startDate || "";
     let dueDate = taskData.dueDate || "";
     
-    // Nếu ngày không đúng định dạng dd/MM/yyyy, chuyển đổi về đúng định dạng
     if (startDate && !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(startDate)) {
       try {
         const date = new Date(startDate);
         if (!isNaN(date.getTime())) {
-          const day = date.getDate().toString().padStart(2, '0');
-          const month = (date.getMonth() + 1).toString().padStart(2, '0');
-          const year = date.getFullYear();
-          startDate = `${day}/${month}/${year}`;
+          startDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
         }
-      } catch (e) {
-        Logger.log("Lỗi định dạng ngày bắt đầu: " + e.toString());
-      }
+      } catch (e) {}
     }
     
     if (dueDate && !/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dueDate)) {
       try {
         const date = new Date(dueDate);
         if (!isNaN(date.getTime())) {
-          const day = date.getDate().toString().padStart(2, '0');
-          const month = (date.getMonth() + 1).toString().padStart(2, '0');
-          const year = date.getFullYear();
-          dueDate = `${day}/${month}/${year}`;
+          dueDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
         }
-      } catch (e) {
-        Logger.log("Lỗi định dạng ngày kết thúc: " + e.toString());
-      }
+      } catch (e) {}
     }
     
-    // Lấy thông tin người phụ trách để ghi vào các cột D, E, F của sheet Tasks
+    // Lấy danh sách users MỘT LẦN DUY NHẤT
+    let allUsers = [];
+    let usersMap = {};
+    if (taskData.assignees && taskData.assignees.length > 0) {
+      allUsers = getUsers();
+      allUsers.forEach(user => {
+        usersMap[user.id] = { name: user.name, initials: user.initials };
+      });
+    }
+    
+    // Tính thông tin người phụ trách
     let assigneeIds = "";
     let assigneeNames = "";
     let assigneeTeams = "";
     if (taskData.assignees && taskData.assignees.length > 0) {
-      try {
-        const allUsers = getUsers();
-        const matchedUsers = taskData.assignees.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
-        assigneeIds = matchedUsers.map(u => u.id).join(', ');
-        assigneeNames = matchedUsers.map(u => u.name).join(', ');
-        assigneeTeams = matchedUsers.map(u => u.team || '').filter(Boolean).join(', ');
-      } catch (err) {
-        Logger.log("Lỗi mapping người phụ trách: " + err.toString());
-      }
+      const matchedUsers = taskData.assignees.map(id => allUsers.find(u => u.id === id)).filter(Boolean);
+      assigneeIds = matchedUsers.map(u => u.id).join(', ');
+      assigneeNames = matchedUsers.map(u => u.name).join(', ');
+      assigneeTeams = matchedUsers.map(u => u.team || '').filter(Boolean).join(', ');
     }
 
     // Tính toán tiến độ
@@ -902,8 +888,8 @@ function updateTask(taskData) {
       taskData.completionDate || ""
     ]]);
     
-    // Xóa công việc con cũ và thêm công việc con mới
-    deleteRowsByTaskId(sheets.subtasks, taskId, 1);
+    // Xóa công việc con cũ và thêm mới
+    deleteRowsFast(sheets.subtasks, taskId, 1);
     if (taskData.subtasks && taskData.subtasks.length > 0) {
       const subtaskRows = taskData.subtasks.map((subtask, index) => [
         subtask.id || `subtask-${taskId}-${index}`,
@@ -915,18 +901,9 @@ function updateTask(taskData) {
       sheets.subtasks.getRange(lastRow + 1, 1, subtaskRows.length, 4).setValues(subtaskRows);
     }
     
-    // Xóa người phụ trách cũ và thêm người mới
-    deleteRowsByTaskId(sheets.assignees, taskId, 0);
+    // Xóa người phụ trách cũ và thêm mới (dùng usersMap đã cache)
+    deleteRowsFast(sheets.assignees, taskId, 0);
     if (taskData.assignees && taskData.assignees.length > 0) {
-      const allUsers = getUsers();
-      const usersMap = {};
-      allUsers.forEach(user => {
-        usersMap[user.id] = {
-          name: user.name,
-          initials: user.initials
-        };
-      });
-      
       const assigneeRows = [];
       taskData.assignees.forEach(assigneeId => {
         if (usersMap[assigneeId]) {
@@ -945,8 +922,8 @@ function updateTask(taskData) {
       }
     }
     
-    // Xóa tệp đính kèm cũ và thêm tệp mới
-    deleteRowsByTaskId(sheets.attachments, taskId, 0);
+    // Xóa tệp đính kèm cũ và thêm mới
+    deleteRowsFast(sheets.attachments, taskId, 0);
     if (taskData.attachments && taskData.attachments.length > 0) {
       const attachmentRows = taskData.attachments.map(attachment => [
         taskId,
@@ -971,10 +948,31 @@ function updateTask(taskData) {
   }
 }
 
-// Hàm phụ trợ xóa các dòng khớp taskId để tối ưu hóa hiệu năng
+// Hàm xóa nhanh - chỉ xóa các dòng khớp taskId (từ dưới lên để không lệch index)
+function deleteRowsFast(sheet, taskId, taskIdColumnIndex) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+  
+  // Đọc chỉ cột taskId để tìm dòng cần xóa
+  const data = sheet.getRange(2, taskIdColumnIndex + 1, lastRow - 1, 1).getValues();
+  const rowsToDelete = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    if (data[i][0] === taskId) {
+      rowsToDelete.push(i + 2); // +2: header + index 0
+    }
+  }
+  
+  // Xóa từ dưới lên để không bị lệch index
+  for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+    sheet.deleteRow(rowsToDelete[i]);
+  }
+}
+
+// Hàm phụ trợ xóa các dòng khớp taskId (phương pháp cũ, dùng cho deleteTask)
 function deleteRowsByTaskId(sheet, taskId, taskIdColumnIndex) {
   const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return; // Chỉ có tiêu đề hoặc rỗng
+  if (lastRow <= 1) return;
   
   const data = sheet.getRange(1, 1, lastRow, sheet.getLastColumn()).getValues();
   const newRows = [];
