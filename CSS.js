@@ -933,6 +933,8 @@ body {
 .gantt-task-cell {
   flex: 1;
   padding: 0.7rem 1rem;
+  white-space: normal !important;
+  word-break: break-word !important;
 }
 
 .gantt-status-cell {
@@ -2075,7 +2077,7 @@ body {
 .gantt-task-row, .gantt-timeline-row {
   display: flex;
   align-items: center; /* Căn giữa theo chiều dọc */
-  height: 40px;
+  height: auto;
   min-height: 40px;
   position: relative;
   border-bottom: 1px solid #f0f0f0;
@@ -2084,7 +2086,7 @@ body {
 .gantt-subtask-row, .gantt-timeline-row.subtask {
   display: flex;
   align-items: center; /* Căn giữa theo chiều dọc */
-  height: 30px;
+  height: auto;
   min-height: 30px;
   background-color: #fafafa;
   border-bottom: 1px solid #f0f0f0;

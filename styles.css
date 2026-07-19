@@ -440,7 +440,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
 .gantt-task-row, .gantt-timeline-row {
   display: flex;
   align-items: center;
-  height: 44px;
+  height: auto;
   min-height: 44px;
   position: relative;
   border-bottom: 1px solid var(--glass-border);
@@ -457,9 +457,8 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
 .gantt-task-cell {
   flex: 1;
   padding: 0.7rem 1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .gantt-status-cell {
@@ -570,7 +569,7 @@ input,select,textarea{font-family:inherit;font-size:inherit;outline:none}
 }
 
 .gantt-subtask-row, .gantt-timeline-row.subtask {
-  height: 34px;
+  height: auto;
   min-height: 34px;
   background: rgba(255, 255, 255, 0.01);
   border-bottom: 1px solid var(--glass-border);

@@ -1390,6 +1390,7 @@ function renderGanttView(tasks) {
       const taskRow = document.createElement('div');
       taskRow.className = 'gantt-task-row';
       taskRow.dataset.id = task.id;
+      taskRow.dataset.ganttRowKey = `task-${task.id}`;
       
       taskRow.innerHTML = `
         <div class="gantt-task-cell">
@@ -1410,6 +1411,7 @@ function renderGanttView(tasks) {
       const timelineRow = document.createElement('div');
       timelineRow.className = 'gantt-timeline-row';
       timelineRow.dataset.id = task.id;
+      timelineRow.dataset.ganttRowKey = `task-${task.id}`;
       
       timelineRow.innerHTML = `
         <div class="gantt-bar-container">
@@ -1433,6 +1435,7 @@ function renderGanttView(tasks) {
           const subtaskRow = document.createElement('div');
           subtaskRow.className = 'gantt-subtask-row';
           subtaskRow.dataset.parent = task.id;
+          subtaskRow.dataset.ganttRowKey = `subtask-${task.id}-${index}`;
           
           subtaskRow.innerHTML = `
             <div class="gantt-task-cell">
@@ -1450,6 +1453,7 @@ function renderGanttView(tasks) {
           const subtaskTimelineRow = document.createElement('div');
           subtaskTimelineRow.className = 'gantt-timeline-row subtask';
           subtaskTimelineRow.dataset.parent = task.id;
+          subtaskTimelineRow.dataset.ganttRowKey = `subtask-${task.id}-${index}`;
           
           timelineBody.appendChild(subtaskTimelineRow);
         });
@@ -1464,6 +1468,9 @@ function renderGanttView(tasks) {
   
   // Thêm sự kiện click cho tệp đính kèm trong Gantt
   attachViewableClickHandler();
+  
+  // Đồng bộ chiều cao dòng
+  syncGanttHeights();
 }
 
 // Thêm CSS cho hiển thị tệp đính kèm trong Gantt
@@ -1883,6 +1890,7 @@ function initGanttChart() {
           row.style.display = 'block';
         });
       }
+      syncGanttHeights();
     });
   });
   
@@ -1937,6 +1945,34 @@ function initGanttChart() {
     const x = e.pageX - ganttTimeline.offsetLeft;
     const walk = (x - startX) * 2; // Tốc độ cuộn
     ganttTimeline.scrollLeft = scrollLeft - walk;
+  });
+}
+
+function syncGanttHeights() {
+  const sideBody = document.querySelector('.gantt-side-body');
+  const timelineBody = document.querySelector('.gantt-timeline-body');
+  if (!sideBody || !timelineBody) return;
+  
+  const leftRows = sideBody.querySelectorAll('.gantt-task-row, .gantt-subtask-row');
+  const rightRows = timelineBody.querySelectorAll('.gantt-timeline-row, .gantt-timeline-row.subtask');
+  
+  // Reset heights
+  leftRows.forEach(row => { row.style.height = 'auto'; });
+  rightRows.forEach(row => { row.style.height = 'auto'; });
+  
+  // Match heights of visible rows
+  leftRows.forEach(leftRow => {
+    if (leftRow.style.display === 'none') return;
+    const key = leftRow.dataset.ganttRowKey;
+    const rightRow = timelineBody.querySelector(`[data-gantt-row-key="${key}"]`);
+    if (rightRow) {
+      const leftHeight = leftRow.offsetHeight;
+      const rightHeight = rightRow.offsetHeight;
+      const maxHeight = Math.max(leftHeight, rightHeight, 40); // GAS uses 40px min
+      
+      leftRow.style.height = `${maxHeight}px`;
+      rightRow.style.height = `${maxHeight}px`;
+    }
   });
 }
 

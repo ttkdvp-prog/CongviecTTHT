@@ -1208,6 +1208,7 @@ function renderGanttView(tasks) {
       const taskRow = document.createElement('div');
       taskRow.className = 'gantt-task-row';
       taskRow.dataset.id = task.id;
+      taskRow.dataset.ganttRowKey = `task-${task.id}`;
       taskRow.innerHTML = `
         <div class="gantt-task-cell">
           <div class="gantt-task-title">
@@ -1225,6 +1226,7 @@ function renderGanttView(tasks) {
       const timelineRow = document.createElement('div');
       timelineRow.className = 'gantt-timeline-row';
       timelineRow.dataset.id = task.id;
+      timelineRow.dataset.ganttRowKey = `task-${task.id}`;
       timelineRow.innerHTML = `
         <div class="gantt-bar-container">
           <div class="gantt-bar ${task.status}" style="left: ${leftPosition}%; width: ${width}%;">
@@ -1242,6 +1244,7 @@ function renderGanttView(tasks) {
           const subtaskRow = document.createElement('div');
           subtaskRow.className = 'gantt-subtask-row';
           subtaskRow.dataset.parent = task.id;
+          subtaskRow.dataset.ganttRowKey = `subtask-${task.id}-${index}`;
           subtaskRow.innerHTML = `
             <div class="gantt-task-cell">
               <div class="gantt-subtask-title" style="padding-left: 24px; display: flex; align-items: center; gap: 8px;">
@@ -1256,6 +1259,7 @@ function renderGanttView(tasks) {
           const subtaskTimelineRow = document.createElement('div');
           subtaskTimelineRow.className = 'gantt-timeline-row subtask';
           subtaskTimelineRow.dataset.parent = task.id;
+          subtaskTimelineRow.dataset.ganttRowKey = `subtask-${task.id}-${index}`;
           timelineBody.appendChild(subtaskTimelineRow);
         });
       }
@@ -1265,6 +1269,35 @@ function renderGanttView(tasks) {
   });
   
   initGanttInteractive();
+  syncGanttHeights();
+}
+
+function syncGanttHeights() {
+  const sideBody = document.querySelector('.gantt-side-body');
+  const timelineBody = document.querySelector('.gantt-timeline-body');
+  if (!sideBody || !timelineBody) return;
+  
+  const leftRows = sideBody.querySelectorAll('.gantt-task-row, .gantt-subtask-row');
+  const rightRows = timelineBody.querySelectorAll('.gantt-timeline-row, .gantt-timeline-row.subtask');
+  
+  // Reset heights
+  leftRows.forEach(row => { row.style.height = 'auto'; });
+  rightRows.forEach(row => { row.style.height = 'auto'; });
+  
+  // Match heights of visible rows
+  leftRows.forEach(leftRow => {
+    if (leftRow.style.display === 'none') return;
+    const key = leftRow.dataset.ganttRowKey;
+    const rightRow = timelineBody.querySelector(`[data-gantt-row-key="${key}"]`);
+    if (rightRow) {
+      const leftHeight = leftRow.offsetHeight;
+      const rightHeight = rightRow.offsetHeight;
+      const maxHeight = Math.max(leftHeight, rightHeight, 44);
+      
+      leftRow.style.height = `${maxHeight}px`;
+      rightRow.style.height = `${maxHeight}px`;
+    }
+  });
 }
 
 function toggleGanttSubtask(taskId, subtaskIndex, isChecked) {
@@ -1306,6 +1339,7 @@ function initGanttInteractive() {
         subtasks.forEach(el => el.style.display = 'flex');
         subtaskTimelines.forEach(el => el.style.display = 'block');
       }
+      syncGanttHeights();
     });
   });
   
