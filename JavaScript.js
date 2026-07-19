@@ -2022,12 +2022,14 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Tự động xác định trạng thái dựa trên ngày làm xong và hạn hoàn thành
       if (val && task.dueDate) {
-        // completionDate: yyyy-MM-dd, dueDate: dd/MM/yyyy
-        const compDate = new Date(val);
+        // So sánh bằng chuỗi số yyyyMMdd để tránh lỗi timezone
+        // completionDate: yyyy-MM-dd → yyyyMMdd
+        const compNum = val.replace(/-/g, '');
+        // dueDate: dd/MM/yyyy → yyyyMMdd
         const dueParts = task.dueDate.split('/');
-        const dueDate = new Date(dueParts[2], parseInt(dueParts[1]) - 1, parseInt(dueParts[0]));
+        const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
         
-        if (compDate <= dueDate) {
+        if (compNum <= dueNum) {
           task.status = 'done';
           task.progress = 100;
         } else {
@@ -2036,15 +2038,32 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (!val) {
         // Xóa ngày làm xong → quay về Đang thực hiện
         task.status = 'inprogress';
+        // Tính lại tiến độ theo công việc con
+        if (task.subtasks && task.subtasks.length > 0) {
+          const completed = task.subtasks.filter(s => s.completed).length;
+          task.progress = Math.round((completed / task.subtasks.length) * 100);
+        } else {
+          task.progress = 0;
+        }
       }
       
-      // Cập nhật giao diện trạng thái trên bảng
+      // Cập nhật giao diện trạng thái + tiến độ trên bảng
       const tr = e.target.closest('tr');
       if (tr) {
         const cells = tr.querySelectorAll('td');
         // cells[7] = Trạng thái
         if (cells[7]) {
           cells[7].innerHTML = `<span class="status-cell ${task.status}">${getStatusText(task.status)}</span>`;
+        }
+        // cells[8] = Tiến độ
+        const progressBarClass = task.status === 'cancelled' ? ' cancelled' : '';
+        if (cells[8]) {
+          cells[8].innerHTML = `
+            <div class="progress-bar-small${progressBarClass}">
+              <div class="progress" style="width: ${task.progress || 0}%"></div>
+              <span>${task.progress || 0}%</span>
+            </div>
+          `;
         }
       }
       

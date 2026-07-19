@@ -2022,11 +2022,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Tự động xác định trạng thái dựa trên ngày làm xong và hạn hoàn thành
       if (val && task.dueDate) {
-        const compDate = new Date(val);
+        const compNum = val.replace(/-/g, '');
         const dueParts = task.dueDate.split('/');
-        const dueDate = new Date(dueParts[2], parseInt(dueParts[1]) - 1, parseInt(dueParts[0]));
+        const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
         
-        if (compDate <= dueDate) {
+        if (compNum <= dueNum) {
           task.status = 'done';
           task.progress = 100;
         } else {
@@ -2034,14 +2034,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else if (!val) {
         task.status = 'inprogress';
+        if (task.subtasks && task.subtasks.length > 0) {
+          const completed = task.subtasks.filter(s => s.completed).length;
+          task.progress = Math.round((completed / task.subtasks.length) * 100);
+        } else {
+          task.progress = 0;
+        }
       }
       
-      // Cập nhật giao diện trạng thái trên bảng
+      // Cập nhật giao diện trạng thái + tiến độ trên bảng
       const tr = e.target.closest('tr');
       if (tr) {
         const cells = tr.querySelectorAll('td');
         if (cells[7]) {
           cells[7].innerHTML = `<span class="status-cell ${task.status}">${getStatusText(task.status)}</span>`;
+        }
+        const progressBarClass = task.status === 'cancelled' ? ' cancelled' : '';
+        if (cells[8]) {
+          cells[8].innerHTML = `
+            <div class="progress-bar-small${progressBarClass}">
+              <div class="progress" style="width: ${task.progress || 0}%"></div>
+              <span>${task.progress || 0}%</span>
+            </div>
+          `;
         }
       }
       

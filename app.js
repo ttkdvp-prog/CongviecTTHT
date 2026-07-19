@@ -180,11 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Tự động xác định trạng thái dựa trên ngày làm xong và hạn hoàn thành
       if (val && task.dueDate) {
-        const compDate = new Date(val);
+        const compNum = val.replace(/-/g, '');
         const dueParts = task.dueDate.split('/');
-        const dueDate = new Date(dueParts[2], parseInt(dueParts[1]) - 1, parseInt(dueParts[0]));
+        const dueNum = dueParts[2] + dueParts[1].padStart(2, '0') + dueParts[0].padStart(2, '0');
         
-        if (compDate <= dueDate) {
+        if (compNum <= dueNum) {
           task.status = 'done';
           task.progress = 100;
         } else {
@@ -192,6 +192,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } else if (!val) {
         task.status = 'inprogress';
+        if (task.subtasks && task.subtasks.length > 0) {
+          const completed = task.subtasks.filter(s => s.completed).length;
+          task.progress = Math.round((completed / task.subtasks.length) * 100);
+        } else {
+          task.progress = 0;
+        }
       }
       
       // Cập nhật giao diện
