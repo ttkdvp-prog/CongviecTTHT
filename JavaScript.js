@@ -6,7 +6,7 @@ const closeModal = document.querySelector('.close-modal');
 const cancelTaskBtn = document.getElementById('cancel-task-btn');
 const taskForm = document.getElementById('task-form');
 const modalTitle = document.getElementById('modal-title');
-const viewButtons = document.querySelectorAll('.view-btn');
+const viewButtons = document.querySelectorAll('.view-btn, .nav-link');
 const kanbanView = document.getElementById('kanban-view');
 const listView = document.getElementById('list-view');
 const ganttView = document.getElementById('gantt-view');
@@ -22,6 +22,7 @@ let allTasks = [];
 let users = [];
 let allTeams = [];
 let allDocuments = [];
+let allNoteTasks = [];
 let isDataLoaded = false;
 let loadingTimeout;
 let currentGanttMonth = new Date().getMonth();
@@ -277,17 +278,32 @@ function loadDataFromServer(skipShowLoading = false, isSilentLoad = false, callb
                       allDocuments = docs || [];
                       renderDocumentsView();
                       populateDocFilterOptions();
-                      renderStatsView();
                       
-                      isDataLoaded = true;
-                      if (!skipShowLoading) {
-                        hideLoading();
-                      }
-                      
-                      // Gọi callback nếu có
-                      if (callback && typeof callback === 'function') {
-                        callback();
-                      }
+                      // Tải công việc lưu ý
+                      google.script.run
+                        .withSuccessHandler(function(notes) {
+                          allNoteTasks = notes || [];
+                          renderNoteTasksView();
+                          populateNoteTeamFilter();
+                          renderStatsView();
+                          
+                          isDataLoaded = true;
+                          if (!skipShowLoading) {
+                            hideLoading();
+                          }
+                          
+                          // Gọi callback nếu có
+                          if (callback && typeof callback === 'function') {
+                            callback();
+                          }
+                        })
+                        .withFailureHandler(function(error) {
+                          handleDataError(error);
+                          if (callback && typeof callback === 'function') {
+                            callback();
+                          }
+                        })
+                        .getNoteTasks();
                     })
                     .withFailureHandler(function(error) {
                       handleDataError(error);
@@ -819,7 +835,8 @@ function switchView(viewType) {
     'list': listView,
     'gantt': ganttView,
     'documents': document.getElementById('documents-view'),
-    'stats': document.getElementById('stats-view')
+    'stats': document.getElementById('stats-view'),
+    'notetasks': document.getElementById('notetasks-view')
   };
   
   // Ẩn tất cả view
@@ -2172,6 +2189,106 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
+  // Sự kiện cho Công việc lưu ý
+  const addNoteBtn = $('add-note-btn');
+  if (addNoteBtn) {
+    addNoteBtn.addEventListener('click', () => openNoteModal());
+  }
+  
+  const noteRefreshBtn = $('note-refresh-btn');
+  if (noteRefreshBtn) {
+    noteRefreshBtn.addEventListener('click', () => loadData());
+  }
+  
+  const noteSearchInput = $('note-search-input');
+  if (noteSearchInput) {
+    noteSearchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const team = $('note-team-filter').value;
+      let filtered = allNoteTasks.filter(t => t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q)));
+      if (team) filtered = filtered.filter(t => t.team === team);
+      renderNoteTasksView(filtered);
+    });
+  }
+  
+  const noteTeamFilter = $('note-team-filter');
+  if (noteTeamFilter) {
+    noteTeamFilter.addEventListener('change', (e) => {
+      const team = e.target.value;
+      const q = $('note-search-input').value.toLowerCase();
+      let filtered = allNoteTasks;
+      if (team) filtered = filtered.filter(t => t.team === team);
+      if (q) filtered = filtered.filter(t => t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q)));
+      renderNoteTasksView(filtered);
+    });
+  }
+  
+  document.querySelectorAll('[data-close="note-modal"]').forEach(btn => {
+    btn.addEventListener('click', closeNoteModal);
+  });
+  
+  const noteForm = $('note-form');
+  if (noteForm) {
+    noteForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const saveBtn = $('save-note-btn');
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+      saveBtn.disabled = true;
+      
+      const id = $('note-id').value;
+      const taskData = {
+        id: id,
+        title: $('note-title').value,
+        description: $('note-desc').value,
+        team: $('note-team').value,
+        status: $('note-status').value,
+        startDate: fromInputDate($('note-start').value),
+        dueDate: fromInputDate($('note-due').value),
+        completionDate: fromInputDate($('note-completion').value),
+        notes: $('note-notes').value
+      };
+      
+      let optimisticTask = { ...taskData };
+      if (!id) optimisticTask.id = 'temp-' + Date.now();
+      
+      if (id) {
+        const idx = allNoteTasks.findIndex(t => t.id === id);
+        if (idx > -1) allNoteTasks[idx] = optimisticTask;
+      } else {
+        allNoteTasks.push(optimisticTask);
+      }
+      
+      closeNoteModal();
+      renderNoteTasksView();
+      
+      const action = id ? 'updateNoteTask' : 'addNoteTask';
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            if (!id && res.taskId) {
+              const idx = allNoteTasks.findIndex(t => t.id === optimisticTask.id);
+              if (idx > -1) allNoteTasks[idx].id = res.taskId;
+            }
+            showNotification('Đã lưu công việc lưu ý!', 'success');
+          } else {
+            loadData(true); // Revert
+            showNotification('Lỗi khi lưu: ' + (res ? res.message : 'Unknown'), 'error');
+          }
+          saveBtn.innerHTML = originalText;
+          saveBtn.disabled = false;
+        })
+        .withFailureHandler(function(err) {
+          console.error(err);
+          loadData(true); // Revert
+          showNotification('Có lỗi xảy ra: ' + err, 'error');
+          saveBtn.innerHTML = originalText;
+          saveBtn.disabled = false;
+        })[action](taskData);
+    });
+  }
+
   // Xử lý form
 taskForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -5560,6 +5677,117 @@ function setupDocViewModalEvents() {
     }
   });
 }
+
+/* ===== Note Tasks View ===== */
+function populateNoteTeamFilter() {
+  const noteTeamFilter = $('note-team-filter');
+  const modalNoteTeam = $('note-team');
+  if (!noteTeamFilter || !modalNoteTeam) return;
+  
+  const options = '<option value="">Tất cả tổ</option>' + allTeams.map(t => `<option value="${t}">${t}</option>`).join('');
+  noteTeamFilter.innerHTML = options;
+  modalNoteTeam.innerHTML = '<option value="">-- Chọn tổ --</option>' + allTeams.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+function renderNoteTasksView(notes) {
+  const list = notes || allNoteTasks;
+  const tbody = $('note-table-body');
+  if (!tbody) return;
+  
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc lưu ý nào</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = list.map(t => {
+    return `<tr>
+      <td><strong>${t.title}</strong></td>
+      <td style="max-width:200px;white-space:normal;">${t.description || ''}</td>
+      <td><span class="badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${t.team || 'Chung'}</span></td>
+      <td>${formatDateDisplay(t.startDate)}</td>
+      <td>${formatDateDisplay(t.dueDate)}</td>
+      <td>${formatDateDisplay(t.completionDate)}</td>
+      <td><span class="badge badge-${t.status}">${getStatusText(t.status)}</span></td>
+      <td style="max-width:150px;white-space:normal;">${t.notes || ''}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-edit" title="Sửa" onclick="editNoteTask('${t.id}')"><i class="fas fa-pen"></i></button>
+          <button class="btn-del" title="Xóa" onclick="delNoteTask('${t.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openNoteModal(id) {
+  const modal = $('note-modal');
+  const form = $('note-form');
+  const title = $('note-modal-title');
+  if (!modal || !form) return;
+  
+  form.reset();
+  
+  if (id) {
+    const t = allNoteTasks.find(x => x.id === id);
+    if (t) {
+      title.innerHTML = '<i class="fas fa-pen"></i> Sửa việc lưu ý';
+      $('note-id').value = t.id;
+      $('note-title').value = t.title;
+      $('note-desc').value = t.description || '';
+      $('note-team').value = t.team || '';
+      $('note-status').value = t.status || 'inprogress';
+      $('note-start').value = toInputDate(t.startDate);
+      $('note-due').value = toInputDate(t.dueDate);
+      $('note-completion').value = toInputDate(t.completionDate);
+      $('note-notes').value = t.notes || '';
+    }
+  } else {
+    title.innerHTML = '<i class="fas fa-plus-circle"></i> Thêm việc lưu ý mới';
+    $('note-id').value = '';
+    $('note-status').value = 'inprogress';
+  }
+  
+  modal.classList.add('show');
+}
+
+function closeNoteModal() {
+  const modal = $('note-modal');
+  if (modal) modal.classList.remove('show');
+  const form = $('note-form');
+  if (form) form.reset();
+}
+
+function editNoteTask(id) { openNoteModal(id); }
+
+function delNoteTask(id) {
+  if (!confirm('Bạn có chắc muốn xóa công việc lưu ý này?')) return;
+  const idx = allNoteTasks.findIndex(t => t.id === id);
+  if (idx > -1) {
+    const backup = { ...allNoteTasks[idx] };
+    allNoteTasks.splice(idx, 1);
+    renderNoteTasksView();
+    showNotification('Đang xóa việc lưu ý...', 'warning');
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          showNotification('Đã xóa việc lưu ý!', 'success');
+        } else {
+          allNoteTasks.splice(idx, 0, backup);
+          renderNoteTasksView();
+          showNotification('Lỗi khi xóa: ' + (res ? res.message : 'Unknown'), 'error');
+        }
+      })
+      .withFailureHandler(function(err) {
+        allNoteTasks.splice(idx, 0, backup);
+        renderNoteTasksView();
+        showNotification('Lỗi khi xóa: ' + err, 'error');
+      })
+      .deleteNoteTask(id);
+  }
+}
+
+window.editNoteTask = editNoteTask;
+window.delNoteTask = delNoteTask;
 
 // Tự động điều chỉnh độ cao của textarea theo nội dung
 function autoResizeTextarea(el) {

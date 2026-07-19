@@ -2196,7 +2196,7 @@ function openNoteModal(id) {
     $('note-status').value = 'inprogress';
   }
   
-  modal.classList.add('active');
+  modal.classList.add('show');
 }
 
 function editNoteTask(id) { openNoteModal(id); }
@@ -2285,7 +2285,7 @@ document.addEventListener('DOMContentLoaded', () => {
           allNoteTasks.push(optimisticTask);
         }
         
-        $('note-modal').classList.remove('active');
+        $('note-modal').classList.remove('show');
         renderNoteTasksView();
         
         const action = id ? 'updateNoteTask' : 'addNoteTask';

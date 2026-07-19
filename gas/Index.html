@@ -46,6 +46,7 @@
         <button class="view-btn" data-view="gantt"><i class="fas fa-chart-gantt"></i> Gantt</button>
         <button class="view-btn" data-view="documents"><i class="fas fa-file-invoice"></i> Tài Liệu</button>
         <button class="view-btn" data-view="stats"><i class="fas fa-chart-column"></i> Thống Kê</button>
+        <button class="view-btn" data-view="notetasks"><i class="fas fa-clipboard-check"></i> Công việc lưu ý</button>
       </div>
     </div>
     
@@ -280,6 +281,49 @@
               <tfoot id="personal-stats-tfoot"></tfoot>
             </table>
           </div>
+        </div>
+      </div>
+      
+      <!-- Giao diện Công việc lưu ý -->
+      <div id="notetasks-view" class="view-section" style="display: none; padding: 20px;">
+        <div class="documents-header glass" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div class="documents-filters" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1;">
+            <div class="documents-search" style="position: relative; display: flex; align-items: center; min-width: 220px; flex: 1;">
+              <i class="fas fa-search" style="position: absolute; left: 12px; color: #94a3b8;"></i>
+              <input type="text" id="note-search-input" placeholder="Tìm kiếm công việc lưu ý..." style="width: 100%; padding: 8px 12px 8px 36px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0;">
+            </div>
+            <select id="note-team-filter" class="documents-select" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 8px 12px; color: #e2e8f0; cursor: pointer; min-width: 150px;">
+              <option value="">Tất cả tổ</option>
+            </select>
+            <button class="btn-icon" id="note-refresh-btn" title="Làm mới dữ liệu" style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <button class="btn-primary" id="add-note-btn" style="display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; background: linear-gradient(135deg, #00c48c, #00a87a); color: #fff; font-weight: 600; border: none; cursor: pointer;">
+            <i class="fas fa-plus"></i>
+            <span>Thêm việc lưu ý</span>
+          </button>
+        </div>
+        
+        <div class="list-container glass" style="overflow-x: auto; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;">
+          <table class="data-table" id="note-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Công việc</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Mô tả</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Tổ</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Bắt đầu</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Kết thúc</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Ngày làm xong</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Trạng thái</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Ghi chú</th>
+                <th style="padding: 14px 16px; font-size: 0.8rem; color: #64748b; text-transform: uppercase;">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="note-table-body" style="color: #e2e8f0;">
+              <tr><td colspan="9" class="empty-cell" style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-inbox"></i> Đang tải dữ liệu...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -631,6 +675,69 @@
           <button class="btn" id="doc-view-btn-replace" style="background: #f97316; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-file-arrow-up"></i> Thay thế hồ sơ</button>
           <button class="btn" id="doc-view-btn-delete" style="background: #ef4444; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 500;"><i class="fas fa-trash-can"></i> Xóa</button>
           <button class="btn" data-close="doc-view-modal" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal thêm/sửa công việc lưu ý -->
+    <div class="modal-overlay" id="note-modal">
+      <div class="modal glass-modal">
+        <div class="modal-header">
+          <h2 id="note-modal-title"><i class="fas fa-plus-circle"></i> Thêm việc lưu ý mới</h2>
+          <button class="btn-icon modal-close" data-close="note-modal"><i class="fas fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <form id="note-form">
+            <input type="hidden" id="note-id">
+            <div class="form-group">
+              <label for="note-title">Công việc <span class="required">*</span></label>
+              <input type="text" id="note-title" placeholder="Nhập tên công việc..." required style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+            </div>
+            <div class="form-group">
+              <label for="note-desc">Mô tả</label>
+              <textarea id="note-desc" rows="2" placeholder="Mô tả chi tiết..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none; font-family: inherit; resize: vertical;"></textarea>
+            </div>
+            <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="note-team">Tổ <span class="required">*</span></label>
+                <select id="note-team" required style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; cursor: pointer; outline: none;">
+                  <option value="">-- Chọn tổ --</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="note-status">Trạng thái</label>
+                <select id="note-status" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; cursor: pointer; outline: none;">
+                  <option value="inprogress">Đang thực hiện</option>
+                  <option value="done">Hoàn thành</option>
+                  <option value="overdue">Quá hạn</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="note-start">Ngày bắt đầu</label>
+                <input type="date" id="note-start" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="note-due">Ngày kết thúc</label>
+                <input type="date" id="note-due" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+            </div>
+            <div class="form-row" style="display: flex; gap: 16px; margin-bottom: 15px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="note-completion">Ngày làm xong</label>
+                <input type="date" id="note-completion" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="note-notes">Ghi chú</label>
+                <input type="text" id="note-notes" placeholder="Ghi chú thêm..." style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #e2e8f0; outline: none;">
+              </div>
+            </div>
+            <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+              <button type="button" class="btn-secondary" data-close="note-modal" style="padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #e2e8f0; cursor: pointer;">Huỷ bỏ</button>
+              <button type="submit" class="btn-primary" id="save-note-btn" style="padding: 10px 20px; border-radius: 10px; border: none; background: linear-gradient(135deg, #00c48c, #00a87a); color: #fff; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;"><i class="fas fa-save"></i> Lưu lại</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
