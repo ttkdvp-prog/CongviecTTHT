@@ -813,11 +813,15 @@ function updateTask(taskData) {
     const taskId = taskData.id;
     
     // Tìm vị trí của công việc trong sheet
-    const tasksValues = sheets.tasks.getRange(2, 1, sheets.tasks.getLastRow() - 1, 1).getValues();
+    const lastTaskRow = sheets.tasks.getLastRow();
+    if (lastTaskRow <= 1) {
+      return { success: false, message: "Không có công việc nào trong danh sách" };
+    }
+    const tasksValues = sheets.tasks.getRange(2, 1, lastTaskRow - 1, 1).getValues();
     let taskRowIndex = -1;
     
     for (let i = 0; i < tasksValues.length; i++) {
-      if (tasksValues[i][0] === taskId) {
+      if (String(tasksValues[i][0]).trim() === String(taskId).trim()) {
         taskRowIndex = i + 2;
         break;
       }
@@ -962,22 +966,26 @@ function updateTask(taskData) {
 
 // Hàm xóa nhanh - chỉ xóa các dòng khớp taskId (từ dưới lên để không lệch index)
 function deleteRowsFast(sheet, taskId, taskIdColumnIndex) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return;
-  
-  // Đọc chỉ cột taskId để tìm dòng cần xóa
-  const data = sheet.getRange(2, taskIdColumnIndex + 1, lastRow - 1, 1).getValues();
-  const rowsToDelete = [];
-  
-  for (let i = 0; i < data.length; i++) {
-    if (data[i][0] === taskId) {
-      rowsToDelete.push(i + 2); // +2: header + index 0
+  try {
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return;
+    
+    // Đọc chỉ cột taskId để tìm dòng cần xóa
+    const data = sheet.getRange(2, taskIdColumnIndex + 1, lastRow - 1, 1).getValues();
+    const rowsToDelete = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(taskId).trim()) {
+        rowsToDelete.push(i + 2);
+      }
     }
-  }
-  
-  // Xóa từ dưới lên để không bị lệch index
-  for (let i = rowsToDelete.length - 1; i >= 0; i--) {
-    sheet.deleteRow(rowsToDelete[i]);
+    
+    // Xóa từ dưới lên để không bị lệch index
+    for (let i = rowsToDelete.length - 1; i >= 0; i--) {
+      sheet.deleteRow(rowsToDelete[i]);
+    }
+  } catch (e) {
+    Logger.log("Lỗi deleteRowsFast: " + e.toString());
   }
 }
 
