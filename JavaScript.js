@@ -5382,13 +5382,15 @@ function parseTaskDate(d) {
 function isTeamMatch(userTeam, filterTeam) {
   if (!filterTeam) return true;
   if (!userTeam) return false;
-  
-  const cleanUser = userTeam.trim().toLowerCase();
+  return userTeam.trim().toLowerCase() === filterTeam.trim().toLowerCase();
+}
+
+function isTaskInTeam(taskTeam, filterTeam) {
+  if (!filterTeam) return true;
+  if (!taskTeam) return false;
   const cleanFilter = filterTeam.trim().toLowerCase();
-  
-  return cleanUser === cleanFilter || 
-         cleanUser.includes(cleanFilter) || 
-         cleanFilter.includes(cleanUser);
+  const teams = taskTeam.split(',').map(t => t.trim().toLowerCase());
+  return teams.includes(cleanFilter);
 }
 
 function calculateAndRenderStats() {
@@ -5423,13 +5425,8 @@ function calculateAndRenderStats() {
     let totalTeamBacklog = 0, totalTeamOverdue = 0, totalTeamCumulativeBacklog = 0;
 
     teamsToProcess.forEach(team => {
-      // Lấy danh sách thành viên thuộc tổ này
-      const teamUserIds = users.filter(u => isTeamMatch(u.team, team)).map(u => u.id);
-      
-      // Lọc các công việc thuộc tổ (có bất kỳ assignee nào thuộc tổ)
-      const teamTasks = allTasks.filter(t => 
-        (t.assignees || []).some(aId => teamUserIds.includes(aId))
-      );
+      // Lọc các công việc thuộc tổ (sử dụng thuộc tính team của công việc trực tiếp từ sheet Tasks)
+      const teamTasks = allTasks.filter(t => isTaskInTeam(t.team, team));
       
       let assignedInMonth = 0;
       let inprogressInMonth = 0;
@@ -5599,7 +5596,7 @@ function calculateAndRenderStats() {
     jobStatsTfoot.innerHTML = '';
 
     if (!keyword) {
-      jobStatsTbody.innerHTML = '<tr><td colspan="4" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-keyboard" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng nhập từ khoá công việc để thống kê sản lượng</td></tr>';
+      jobStatsTbody.innerHTML = '<tr><td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-keyboard" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Vui lòng nhập từ khoá công việc để thống kê sản lượng</td></tr>';
     } else {
       // Lọc công việc theo tên và tháng
       const matchingTasks = allTasks.filter(t => {
@@ -5619,39 +5616,28 @@ function calculateAndRenderStats() {
         const groupedSummary = {};
 
         matchingTasks.forEach(task => {
-          const taskAssignees = task.assignees || [];
-          const teamsSet = new Set();
-          
-          taskAssignees.forEach(aId => {
-            const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
-            if (user && user.team) {
-              teamsSet.add(user.team);
-            }
-          });
+          // Lấy tổ đầu tiên làm tổ chính phụ trách công việc
+          const team = (task.team || '').split(',')[0].trim() || 'Chưa phân tổ';
 
-          const teamsList = teamsSet.size > 0 ? Array.from(teamsSet) : ['Chưa phân tổ'];
+          if (teamFilterVal && !isTaskInTeam(team, teamFilterVal)) {
+            return;
+          }
 
-          teamsList.forEach(team => {
-            if (teamFilterVal && !isTeamMatch(team, teamFilterVal)) {
-              return;
-            }
+          const title = (task.title || '').trim();
+          const planVal = task.planValue || 0;
+          const actualVal = task.actualValue || 0;
 
-            const title = (task.title || '').trim();
-            const planVal = task.planValue || 0;
-            const actualVal = task.actualValue || 0;
-
-            const key = `${team} ||| ${title}`;
-            if (!groupedSummary[key]) {
-              groupedSummary[key] = {
-                teams: team,
-                title: title,
-                plan: 0,
-                actual: 0
-              };
-            }
-            groupedSummary[key].plan += planVal;
-            groupedSummary[key].actual += actualVal;
-          });
+          const key = `${team} ||| ${title}`;
+          if (!groupedSummary[key]) {
+            groupedSummary[key] = {
+              teams: team,
+              title: title,
+              plan: 0,
+              actual: 0
+            };
+          }
+          groupedSummary[key].plan += planVal;
+          groupedSummary[key].actual += actualVal;
         });
 
         const reportRows = Object.values(groupedSummary);
