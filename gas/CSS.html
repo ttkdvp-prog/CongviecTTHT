@@ -2781,4 +2781,22 @@ tr.deleting {
   z-index: 30 !important;
   background: #2d1b69 !important;
 }
+
+/* Disable horizontal stickiness on mobile screens */
+@media (max-width: 768px) {
+  .data-table th:nth-child(1), .data-table td:nth-child(1),
+  .data-table th:nth-child(2), .data-table td:nth-child(2),
+  .data-table th:nth-child(3), .data-table td:nth-child(3),
+  .data-table th:nth-child(4), .data-table td:nth-child(4),
+  .task-table th:nth-child(1), .task-table td:nth-child(1),
+  .task-table th:nth-child(2), .task-table td:nth-child(2),
+  .task-table th:nth-child(3), .task-table td:nth-child(3),
+  .task-table th:nth-child(4), .task-table td:nth-child(4),
+  .data-table th:first-child, .data-table td:first-child {
+    position: static !important;
+    left: auto !important;
+    z-index: 1 !important;
+    box-shadow: none !important;
+  }
+}
 </style>

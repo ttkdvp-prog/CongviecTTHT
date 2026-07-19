@@ -3007,7 +3007,7 @@ tr.deleting {
   position: sticky !important;
   top: 0 !important;
   z-index: 25 !important;
-  background: #111c30 !important;
+  background: #2d1b69 !important;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
   border-bottom: 2px solid var(--accent) !important;
 }
@@ -3017,7 +3017,7 @@ tr.deleting {
   left: 0 !important;
   top: 0 !important;
   z-index: 30 !important;
-  background: #111c30 !important;
+  background: #2d1b69 !important;
 }
 
 .data-table th:nth-child(2),
@@ -3025,7 +3025,7 @@ tr.deleting {
   left: 220px !important;
   top: 0 !important;
   z-index: 30 !important;
-  background: #111c30 !important;
+  background: #2d1b69 !important;
 }
 
 .data-table th:nth-child(3),
@@ -3033,7 +3033,7 @@ tr.deleting {
   left: 470px !important;
   top: 0 !important;
   z-index: 30 !important;
-  background: #111c30 !important;
+  background: #2d1b69 !important;
 }
 
 .data-table th:nth-child(4),
@@ -3041,6 +3041,24 @@ tr.deleting {
   left: 610px !important;
   top: 0 !important;
   z-index: 30 !important;
-  background: #111c30 !important;
+  background: #2d1b69 !important;
+}
+
+/* Disable horizontal stickiness on mobile screens */
+@media (max-width: 768px) {
+  .data-table th:nth-child(1), .data-table td:nth-child(1),
+  .data-table th:nth-child(2), .data-table td:nth-child(2),
+  .data-table th:nth-child(3), .data-table td:nth-child(3),
+  .data-table th:nth-child(4), .data-table td:nth-child(4),
+  .task-table th:nth-child(1), .task-table td:nth-child(1),
+  .task-table th:nth-child(2), .task-table td:nth-child(2),
+  .task-table th:nth-child(3), .task-table td:nth-child(3),
+  .task-table th:nth-child(4), .task-table td:nth-child(4),
+  .data-table th:first-child, .data-table td:first-child {
+    position: static !important;
+    left: auto !important;
+    z-index: 1 !important;
+    box-shadow: none !important;
+  }
 }
 </style>
