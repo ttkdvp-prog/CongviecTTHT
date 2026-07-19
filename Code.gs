@@ -1500,5 +1500,147 @@ function triggerDriveAuth() {
   const folder = DriveApp.createFolder("TTHT_Auth_Test_Folder");
   // Xoá thư mục test vừa tạo ngay lập tức
   folder.setTrashed(true);
-  Logger.log("Đã kích hoạt đủ quyền đọc và ghi thành công!");
+}
+
+// ==========================================
+// CÁC HÀM XỬ LÝ CÔNG VIỆC LƯU Ý (cvluuy)
+// ==========================================
+
+function getNoteTasks() {
+  try {
+    const ss = getSs();
+    const sheet = ss.getSheetByName("cvluuy");
+    if (!sheet) return [];
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return [];
+    
+    const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const noteTasks = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue;
+      
+      noteTasks.push({
+        id: String(row[0]),
+        title: row[1],
+        description: row[2],
+        team: row[3],
+        startDate: row[4] ? formatDateObj(row[4]) : '',
+        dueDate: row[5] ? formatDateObj(row[5]) : '',
+        completionDate: row[6] ? formatDateObj(row[6]) : '',
+        status: row[7],
+        notes: row[8]
+      });
+    }
+    
+    return noteTasks;
+  } catch (e) {
+    Logger.log("Lỗi khi tải công việc lưu ý: " + e.toString());
+    return [];
+  }
+}
+
+function addNoteTask(taskData) {
+  try {
+    if (!taskData.title) {
+      return { success: false, message: "Tên công việc không được để trống" };
+    }
+    
+    const ss = getSs();
+    const sheet = ss.getSheetByName("cvluuy");
+    if (!sheet) return { success: false, message: "Không tìm thấy sheet cvluuy" };
+    
+    const taskId = 'note-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000);
+    
+    sheet.appendRow([
+      taskId,
+      taskData.title,
+      taskData.description || "",
+      taskData.team || "",
+      taskData.startDate || "",
+      taskData.dueDate || "",
+      taskData.completionDate || "",
+      taskData.status || "inprogress",
+      taskData.notes || ""
+    ]);
+    
+    return { success: true, message: "Đã thêm công việc lưu ý!", taskId: taskId };
+  } catch (e) {
+    Logger.log("Lỗi khi thêm công việc lưu ý: " + e.toString());
+    return { success: false, message: "Lỗi: " + e.toString() };
+  }
+}
+
+function updateNoteTask(taskData) {
+  try {
+    if (!taskData.id || !taskData.title) {
+      return { success: false, message: "Thiếu ID hoặc Tên công việc" };
+    }
+    
+    const ss = getSs();
+    const sheet = ss.getSheetByName("cvluuy");
+    if (!sheet) return { success: false, message: "Không tìm thấy sheet cvluuy" };
+    
+    const lastRow = sheet.getLastRow();
+    const data = sheet.getRange(1, 1, lastRow, 1).getValues();
+    let rowIndex = -1;
+    
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]) === taskData.id) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return { success: false, message: "Không tìm thấy công việc lưu ý" };
+    }
+    
+    sheet.getRange(rowIndex, 2).setValue(taskData.title);
+    sheet.getRange(rowIndex, 3).setValue(taskData.description || "");
+    sheet.getRange(rowIndex, 4).setValue(taskData.team || "");
+    sheet.getRange(rowIndex, 5).setValue(taskData.startDate || "");
+    sheet.getRange(rowIndex, 6).setValue(taskData.dueDate || "");
+    sheet.getRange(rowIndex, 7).setValue(taskData.completionDate || "");
+    sheet.getRange(rowIndex, 8).setValue(taskData.status || "inprogress");
+    sheet.getRange(rowIndex, 9).setValue(taskData.notes || "");
+    
+    return { success: true, message: "Đã cập nhật công việc lưu ý!" };
+  } catch (e) {
+    Logger.log("Lỗi khi cập nhật công việc lưu ý: " + e.toString());
+    return { success: false, message: "Lỗi: " + e.toString() };
+  }
+}
+
+function deleteNoteTask(taskId) {
+  try {
+    if (!taskId) return { success: false, message: "Thiếu ID công việc" };
+    
+    const ss = getSs();
+    const sheet = ss.getSheetByName("cvluuy");
+    if (!sheet) return { success: false, message: "Không tìm thấy sheet cvluuy" };
+    
+    const lastRow = sheet.getLastRow();
+    const data = sheet.getRange(1, 1, lastRow, 1).getValues();
+    let rowIndex = -1;
+    
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]) === taskId) {
+        rowIndex = i + 1;
+        break;
+      }
+    }
+    
+    if (rowIndex === -1) {
+      return { success: false, message: "Không tìm thấy công việc lưu ý" };
+    }
+    
+    sheet.deleteRow(rowIndex);
+    return { success: true, message: "Đã xóa công việc lưu ý" };
+  } catch (e) {
+    Logger.log("Lỗi khi xóa công việc lưu ý: " + e.toString());
+    return { success: false, message: "Lỗi: " + e.toString() };
+  }
 }
