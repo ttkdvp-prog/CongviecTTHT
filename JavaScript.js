@@ -2172,6 +2172,7 @@ taskForm.addEventListener('submit', (e) => {
   saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
   saveButton.disabled = true;
   
+  try {
   // Thu thập dữ liệu từ form
   const taskId = document.getElementById('task-id').value;
   const isEdit = taskId !== '';
@@ -2190,7 +2191,7 @@ taskForm.addEventListener('submit', (e) => {
     dueDate: formatDate(dueDateInput),
     planValue: Number(document.getElementById('task-plan-value').value) || 0,
     actualValue: isEdit ? (allTasks.find(t => t.id === taskId)?.actualValue || 0) : 0,
-    notes: document.getElementById('task-notes').value.trim(),
+    notes: (document.getElementById('task-notes') || {}).value || '',
     
     // Thu thập người phụ trách
     assignees: Array.from(document.querySelectorAll('.assignee-checkbox:checked')).map(
@@ -2202,7 +2203,7 @@ taskForm.addEventListener('submit', (e) => {
       const isImage = item.querySelector('img') !== null;
       return {
         type: isImage ? 'image' : 'file',
-        name: item.querySelector('.preview-name').textContent,
+        name: item.querySelector('.preview-name') ? item.querySelector('.preview-name').textContent : 'file',
         url: isImage ? item.querySelector('img').src : '#'
       };
     }),
@@ -2210,8 +2211,8 @@ taskForm.addEventListener('submit', (e) => {
     // Thu thập công việc con
     subtasks: Array.from(document.querySelectorAll('.subtasks-list .subtask-list-item')).map(item => {
       return {
-        text: item.querySelector('.subtask-text').textContent,
-        completed: item.querySelector('.subtask-checkbox').checked
+        text: item.querySelector('.subtask-text') ? item.querySelector('.subtask-text').textContent : '',
+        completed: item.querySelector('.subtask-checkbox') ? item.querySelector('.subtask-checkbox').checked : false
       };
     })
   };
@@ -2304,6 +2305,14 @@ taskForm.addEventListener('submit', (e) => {
         showNotification('Lỗi khi thêm công việc mới: ' + error, 'error', true);
       })
       .addTask(taskData);
+  }
+  
+  } catch (err) {
+    // Hiển thị lỗi cho người dùng
+    console.error('Lỗi khi lưu công việc:', err);
+    alert('Lỗi khi lưu: ' + err.message + '\n\nStack: ' + err.stack);
+    saveButton.innerHTML = originalButtonText;
+    saveButton.disabled = false;
   }
 });
 
