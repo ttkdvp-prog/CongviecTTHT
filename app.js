@@ -553,12 +553,9 @@ function openTaskModal(task) {
     $('task-id').value = task.id;
     $('task-title').value = task.title || '';
     $('task-desc').value = task.description || '';
-    $('task-priority').value = task.priority || 'medium';
-    $('task-status').value = task.status || 'inprogress';
     $('task-start').value = toInputDate(task.startDate);
     $('task-due').value = toInputDate(task.dueDate);
     $('task-plan-value').value = task.planValue || '';
-    $('task-actual-value').value = task.actualValue || '';
     $('task-notes').value = task.notes || '';
     // Assignees
     (task.assignees || []).forEach(aId => {
@@ -719,13 +716,13 @@ function setupTaskForm() {
     const taskData = {
       title: $('task-title').value.trim(),
       description: $('task-desc').value.trim(),
-      priority: $('task-priority').value,
-      status: $('task-status').value,
+      priority: taskId ? (allTasks.find(t => t.id === taskId)?.priority || 'medium') : 'medium',
+      status: taskId ? (allTasks.find(t => t.id === taskId)?.status || 'inprogress') : 'inprogress',
       startDate: startVal ? fromInputDate(startVal) : '',
       dueDate: dueVal ? fromInputDate(dueVal) : '',
       progress,
       planValue: Number($('task-plan-value').value) || 0,
-      actualValue: Number($('task-actual-value').value) || 0,
+      actualValue: taskId ? (allTasks.find(t => t.id === taskId)?.actualValue || 0) : 0,
       notes: $('task-notes').value.trim(),
       assignees: selectedAssignees,
       subtasks,

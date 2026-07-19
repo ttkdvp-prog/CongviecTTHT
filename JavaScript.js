@@ -508,13 +508,9 @@ function openTaskModal(isEdit = false, taskData = null, status = null) {
       document.getElementById('task-id').value = taskData.id || '';
       document.getElementById('task-title-input').value = taskData.title || '';
       document.getElementById('task-desc-input').value = taskData.description || '';
-      document.getElementById('task-priority').value = taskData.priority || 'medium';
-      document.getElementById('task-status').value = taskData.status || 'inprogress';
-      
       document.getElementById('task-start-date').value = convertDateForInput(taskData.startDate);
       document.getElementById('task-due-date').value = convertDateForInput(taskData.dueDate);
       document.getElementById('task-plan-value').value = taskData.planValue || '';
-      document.getElementById('task-actual-value').value = taskData.actualValue || '';
       document.getElementById('task-notes').value = taskData.notes || '';
       
       // Xử lý người phụ trách
@@ -546,17 +542,13 @@ function openTaskModal(isEdit = false, taskData = null, status = null) {
     taskForm.reset();
     document.getElementById('task-id').value = '';
     document.getElementById('task-plan-value').value = '';
-    document.getElementById('task-actual-value').value = '';
     document.getElementById('task-notes').value = '';
     
     // Xóa tệp đính kèm và công việc con
     document.querySelector('.attachment-preview').innerHTML = '';
     document.querySelector('.subtasks-list').innerHTML = '';
     
-    // Nếu có trạng thái được chỉ định, thiết lập trạng thái cho công việc mới
-    if (status) {
-      document.getElementById('task-status').value = status;
-    }
+    // Trạng thái mặc định là 'inprogress' cho công việc mới
   }
   
   taskModal.style.display = 'block';
@@ -2192,12 +2184,12 @@ taskForm.addEventListener('submit', (e) => {
     id: taskId,
     title: document.getElementById('task-title-input').value,
     description: document.getElementById('task-desc-input').value,
-    priority: document.getElementById('task-priority').value,
-    status: document.getElementById('task-status').value,
+    priority: isEdit ? (allTasks.find(t => t.id === taskId)?.priority || 'medium') : 'medium',
+    status: isEdit ? (allTasks.find(t => t.id === taskId)?.status || 'inprogress') : 'inprogress',
     startDate: formatDate(startDateInput),
     dueDate: formatDate(dueDateInput),
     planValue: Number(document.getElementById('task-plan-value').value) || 0,
-    actualValue: Number(document.getElementById('task-actual-value').value) || 0,
+    actualValue: isEdit ? (allTasks.find(t => t.id === taskId)?.actualValue || 0) : 0,
     notes: document.getElementById('task-notes').value.trim(),
     
     // Thu thập người phụ trách
