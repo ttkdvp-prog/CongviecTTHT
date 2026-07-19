@@ -1151,7 +1151,6 @@ function renderListView(tasks) {
     const ratio = plan > 0 ? Math.round((actual / plan) * 100) + '%' : '—';
 
     row.innerHTML = `
-      <td>${task.id.replace('task-', '')}</td>
       <td>
         <div class="task-title-cell">
           ${task.title}
@@ -1159,13 +1158,13 @@ function renderListView(tasks) {
         </div>
       </td>
       <td style="max-width: 250px; white-space: normal; word-break: break-word; color: var(--text3);">${task.description || ''}</td>
+      <td><span class="status-cell ${task.status}">${getStatusText(task.status)}</span></td>
       <td>${assigneesHtml}</td>
       <td>${formatDateDisplay(task.startDate) || ''}</td>
       <td>${task.status === 'overdue' ? 
           `<span class="overdue">${formatDateDisplay(task.dueDate) || ''}</span>` : 
           (formatDateDisplay(task.dueDate) || '')}</td>
       <td><input type="date" class="table-completion-date-input" value="${task.completionDate || ''}" data-id="${task.id}" style="width: 130px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.85rem; outline: none; transition: all 0.2s; font-family: inherit;"></td>
-      <td><span class="status-cell ${task.status}">${getStatusText(task.status)}</span></td>
       <td>
         <div class="progress-bar-small ${progressBarClass}">
           <div class="progress" style="width: ${task.progress || 0}%"></div>
@@ -1205,7 +1204,7 @@ function renderListView(tasks) {
       
       subtaskRow.innerHTML = `
         <td></td>
-        <td colspan="14">
+        <td colspan="13">
           <div class="subtasks-table">
             ${subtasksHtml}
           </div>
@@ -2070,12 +2069,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const tr = e.target.closest('tr');
       if (tr) {
         const cells = tr.querySelectorAll('td');
-        if (cells[7]) {
-          cells[7].innerHTML = `<span class="status-cell ${task.status}">${getStatusText(task.status)}</span>`;
+        // cells[2] = Trạng thái
+        if (cells[2]) {
+          cells[2].innerHTML = `<span class="status-cell ${task.status}">${getStatusText(task.status)}</span>`;
         }
+        // cells[7] = Tiến độ
         const progressBarClass = task.status === 'cancelled' ? ' cancelled' : '';
-        if (cells[8]) {
-          cells[8].innerHTML = `
+        if (cells[7]) {
+          cells[7].innerHTML = `
             <div class="progress-bar-small${progressBarClass}">
               <div class="progress" style="width: ${task.progress || 0}%"></div>
               <span>${task.progress || 0}%</span>
@@ -3527,12 +3528,15 @@ function updateTaskElementInUI(taskData) {
     const cells = listViewRow.querySelectorAll('td');
     if (cells.length >= 10) {
       // Tiêu đề
-      cells[1].querySelector('.task-title-cell').textContent = taskData.title;
+      cells[0].querySelector('.task-title-cell').textContent = taskData.title;
       
       // Mô tả
-      cells[2].textContent = taskData.description || '';
+      cells[1].textContent = taskData.description || '';
       
-      // Người phụ trách (was cells[4], now cells[3])
+      // Trạng thái
+      cells[2].innerHTML = `<span class="status-cell ${taskData.status}">${getStatusText(taskData.status)}</span>`;
+      
+      // Người phụ trách
       let assigneesHtml = '';
       if (taskData.assignees && taskData.assignees.length > 0) {
         assigneesHtml = '<div class="assignee-list">';
@@ -3558,12 +3562,9 @@ function updateTaskElementInUI(taskData) {
       
       // Ngày làm xong (cells[6]) - giữ nguyên input, không cần update
       
-      // Trạng thái
-      cells[7].innerHTML = `<span class="status-cell ${taskData.status}">${getStatusText(taskData.status)}</span>`;
-      
       // Tiến độ
       const progressClass = taskData.status === 'cancelled' ? ' cancelled' : '';
-      cells[8].innerHTML = `
+      cells[7].innerHTML = `
         <div class="progress-bar-small${progressClass}">
           <div class="progress" style="width: ${taskData.progress || 0}%"></div>
           <span>${taskData.progress || 0}%</span>

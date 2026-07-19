@@ -2909,4 +2909,85 @@ tr.deleting {
 #personal-stats-table tbody tr:hover {
   background: rgba(255,255,255,0.02);
 }
+
+/* Frozen columns in task list */
+.list-container {
+  position: relative !important;
+}
+
+.data-table th:nth-child(1),
+.data-table td:nth-child(1),
+.task-table th:nth-child(1),
+.task-table td:nth-child(1) {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 15 !important;
+  background: #172237 !important; /* Shade background of Title column */
+  min-width: 220px !important;
+  max-width: 220px !important;
+  width: 220px !important;
+  border-right: 1px solid var(--glass-border) !important;
+}
+
+.data-table th:nth-child(1),
+.task-table th:nth-child(1) {
+  z-index: 18 !important;
+}
+
+.data-table th:nth-child(2),
+.data-table td:nth-child(2),
+.task-table th:nth-child(2),
+.task-table td:nth-child(2) {
+  position: sticky !important;
+  left: 220px !important;
+  z-index: 15 !important;
+  background: var(--bg2) !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
+  width: 250px !important;
+  border-right: 1px solid var(--glass-border) !important;
+}
+
+.data-table th:nth-child(2),
+.task-table th:nth-child(2) {
+  z-index: 18 !important;
+}
+
+.data-table th:nth-child(3),
+.data-table td:nth-child(3),
+.task-table th:nth-child(3),
+.task-table td:nth-child(3) {
+  position: sticky !important;
+  left: 470px !important;
+  z-index: 15 !important;
+  background: var(--bg2) !important;
+  min-width: 140px !important;
+  max-width: 140px !important;
+  width: 140px !important;
+  border-right: 1px solid var(--glass-border) !important;
+}
+
+.data-table th:nth-child(3),
+.task-table th:nth-child(3) {
+  z-index: 18 !important;
+}
+
+.data-table th:nth-child(4),
+.data-table td:nth-child(4),
+.task-table th:nth-child(4),
+.task-table td:nth-child(4) {
+  position: sticky !important;
+  left: 610px !important;
+  z-index: 15 !important;
+  background: var(--bg2) !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  width: 220px !important;
+  border-right: 1px solid var(--glass-border) !important;
+}
+
+.data-table th:nth-child(4),
+.task-table th:nth-child(4) {
+  z-index: 18 !important;
+}
 </style>
