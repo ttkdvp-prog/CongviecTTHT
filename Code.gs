@@ -598,7 +598,7 @@ function getTasks() {
       // Lấy công việc con
       const subtasks = [];
       for (let j = 0; j < subtasksData.length; j++) {
-        if (subtasksData[j][1] === taskId) {
+        if (String(subtasksData[j][1]).trim() === String(taskId).trim()) {
           subtasks.push({
             id: String(subtasksData[j][0]),
             text: String(subtasksData[j][2]),
@@ -608,17 +608,21 @@ function getTasks() {
       }
       
       // Lấy người phụ trách
-      const assignees = [];
+      let assignees = [];
       for (let j = 0; j < assigneesData.length; j++) {
-        if (assigneesData[j][0] === taskId) {
-          assignees.push(String(assigneesData[j][1]));
+        if (String(assigneesData[j][0]).trim() === String(taskId).trim()) {
+          assignees.push(String(assigneesData[j][1]).trim());
         }
+      }
+      // Khắc phục: Nếu không có dữ liệu gán riêng trong sheet Assignees, tự động lấy từ Cột D (Người phụ trách) của sheet Tasks
+      if (assignees.length === 0 && row[3]) {
+        assignees = String(row[3]).split(',').map(id => id.trim()).filter(Boolean);
       }
       
       // Lấy tệp đính kèm
       const attachments = [];
       for (let j = 0; j < attachmentsData.length; j++) {
-        if (attachmentsData[j][0] === taskId) {
+        if (String(attachmentsData[j][0]).trim() === String(taskId).trim()) {
           attachments.push({
             name: String(attachmentsData[j][1]),
             type: String(attachmentsData[j][2]),

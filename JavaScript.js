@@ -1035,7 +1035,7 @@ function createTaskElement(task) {
   let assigneesHtml = '';
   if (task.assignees && task.assignees.length > 0) {
     const assigneeAvatars = task.assignees.map(assigneeId => {
-      const user = users.find(u => u.id === assigneeId);
+      const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
       return user ? `<div class="avatar" title="${user.name}">${user.initials}</div>` : '';
     }).join('');
     
@@ -1102,7 +1102,7 @@ function renderListView(tasks) {
     let assigneesHtml = '';
     if (task.assignees && task.assignees.length > 0) {
       const assigneeAvatars = task.assignees.map(assigneeId => {
-        const user = users.find(u => u.id === assigneeId);
+        const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
         return user ? `<div class="avatar small" title="${user.name}">${user.initials}</div>` : '';
       }).join('');
       
@@ -1358,7 +1358,7 @@ function renderGanttView(tasks) {
         assigneesHtml = '<div class="gantt-bar-assignees">';
         
         task.assignees.forEach(assigneeId => {
-          const user = users.find(u => u.id === assigneeId);
+          const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
           if (user) {
             assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name}">${user.initials}</div>`;
           }
@@ -3460,7 +3460,7 @@ function updateTaskElementInUI(taskData) {
       
       if (taskData.assignees && taskData.assignees.length > 0) {
         taskData.assignees.forEach(assigneeId => {
-          const user = users.find(u => u.id === assigneeId);
+          const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
           if (user) {
             const avatarElement = document.createElement('div');
             avatarElement.className = 'avatar';
@@ -3544,7 +3544,7 @@ function updateTaskElementInUI(taskData) {
       if (taskData.assignees && taskData.assignees.length > 0) {
         assigneesHtml = '<div class="assignee-list">';
         taskData.assignees.forEach(assigneeId => {
-          const user = users.find(u => u.id === assigneeId);
+          const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
           if (user) {
             assigneesHtml += `<div class="avatar small" title="${user.name}">${user.initials}</div>`;
           }
@@ -3662,7 +3662,7 @@ function updateTaskInGanttView(taskData) {
         
         if (taskData.assignees && taskData.assignees.length > 0) {
           taskData.assignees.forEach(assigneeId => {
-            const user = users.find(u => u.id === assigneeId);
+            const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
             if (user) {
               const avatarElement = document.createElement('div');
               avatarElement.className = 'gantt-bar-avatar';
@@ -5623,7 +5623,7 @@ function calculateAndRenderStats() {
           const taskAssignees = task.assignees || [];
           const teamsSet = new Set();
           taskAssignees.forEach(aId => {
-            const user = users.find(u => u.id === aId);
+            const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
             if (user && user.team) {
               teamsSet.add(user.team);
             }

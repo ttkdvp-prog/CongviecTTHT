@@ -89,7 +89,7 @@ function getTeamAbbr(teamName) {
 function getTaskTeamsAbbr(t) {
   if (!t.assignees || t.assignees.length === 0) return '';
   const abbrs = t.assignees.map(assigneeId => {
-    const user = users.find(u => u.id === assigneeId);
+    const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
     return user ? getTeamAbbr(user.team) : '';
   }).filter(a => a);
   const uniqueAbbrs = [...new Set(abbrs)];
@@ -566,7 +566,7 @@ function renderKanban(tasks) {
     if (filtered.length === 0) { col.innerHTML = '<div class="empty-state-sm">Trống</div>'; return; }
     col.innerHTML = filtered.map(t => {
       const assigneeHtml = (t.assignees || []).map((a, i) => {
-        const u = users.find(u => u.id === a);
+        const u = users.find(u => String(u.id).trim().toUpperCase() === String(a).trim().toUpperCase());
         return `<div class="mini-avatar" title="${u ? u.name + ' (' + u.id + ')' : a}">${u ? getInitials(u.name) : '?'}</div>`;
       }).join('');
       const progress = t.progress || 0;
@@ -625,7 +625,7 @@ function renderListView(tasks) {
   const tbody = $('task-table-body');
   if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="12" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
-    const assignees = (t.assignees || []).map(a => { const u = users.find(u => u.id === a); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
+    const assignees = (t.assignees || []).map(a => { const u = users.find(u => String(u.id).trim().toUpperCase() === String(a).trim().toUpperCase()); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
     const p = t.progress || 0;
     
     // Tính tỷ lệ thực hiện / kế hoạch
@@ -992,7 +992,7 @@ async function delTask(id) {
 }
 
 function editUser(id) {
-  const user = users.find(u => u.id === id);
+  const user = users.find(u => String(u.id).trim().toUpperCase() === String(id).trim().toUpperCase());
   if (user) openUserModal(user);
 }
 
@@ -1041,7 +1041,7 @@ function filterAndRender() {
     filtered = filtered.filter(t => {
       if (!t.assignees || t.assignees.length === 0) return false;
       return t.assignees.some(assigneeId => {
-        const user = users.find(u => u.id === assigneeId);
+        const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
         return user && user.team === team;
       });
     });
@@ -1161,7 +1161,7 @@ function renderGanttView(tasks) {
       if (task.assignees && task.assignees.length > 0) {
         assigneesHtml = '<div class="gantt-bar-assignees">';
         task.assignees.forEach(assigneeId => {
-          const user = users.find(u => u.id === assigneeId);
+          const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
           if (user) {
             assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name} (${user.id})">${getInitials(user.name)}</div>`;
           }
@@ -2259,7 +2259,7 @@ function calculateAndRenderStats() {
           const taskAssignees = task.assignees || [];
           const teamsSet = new Set();
           taskAssignees.forEach(aId => {
-            const user = users.find(u => u.id === aId);
+            const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
             if (user && user.team) {
               teamsSet.add(user.team);
             }
