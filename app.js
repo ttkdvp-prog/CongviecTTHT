@@ -27,7 +27,7 @@ const api = {
   async get(action) {
     try {
       const r = await fetch(`${API_URL}?action=${action}`);
-      return r.json();
+      return await r.json();
     } catch(e) { console.error('API GET error:', e); return []; }
   },
   async post(action, data) {
@@ -38,7 +38,7 @@ const api = {
         body: JSON.stringify({ action, ...data }),
         redirect: 'follow'
       });
-      return r.json();
+      return await r.json();
     } catch(e) { console.error('API POST error:', e); return { success: false, message: e.toString() }; }
   }
 };
