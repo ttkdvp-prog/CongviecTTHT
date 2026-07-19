@@ -1103,8 +1103,7 @@ function renderListView(tasks) {
     if (task.assignees && task.assignees.length > 0) {
       assigneesText = task.assignees.map(assigneeId => {
         const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
-        if (!user) return '';
-        return `${user.name}<br><span style="opacity:0.7;">(${user.id}) [${user.initials}]</span>`;
+        return user ? user.name : '';
       }).filter(n => n).join('<br>');
     }
     

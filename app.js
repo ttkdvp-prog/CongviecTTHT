@@ -606,7 +606,7 @@ function renderKanban(tasks) {
     col.innerHTML = filtered.map(t => {
       const assigneeHtml = (t.assignees || []).map((a, i) => {
         const u = users.find(u => String(u.id).trim().toUpperCase() === String(a).trim().toUpperCase());
-        return `<div class="mini-avatar" title="${u ? u.name + ' (' + u.id + ')' : a}">${u ? getInitials(u.name) : '?'}</div>`;
+        return `<div class="mini-avatar" title="${u ? u.name : a}">${u ? getInitials(u.name) : '?'}</div>`;
       }).join('');
       const progress = t.progress || 0;
       return `<div class="task-card" draggable="true" data-id="${t.id}">
@@ -664,7 +664,7 @@ function renderListView(tasks) {
   const tbody = $('task-table-body');
   if (list.length === 0) { tbody.innerHTML = '<tr><td colspan="13" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc nào</td></tr>'; return; }
   tbody.innerHTML = list.map(t => {
-    const assignees = (t.assignees || []).map(a => { const u = users.find(u => String(u.id).trim().toUpperCase() === String(a).trim().toUpperCase()); return u ? `${u.name} (${u.id})${u.team ? ' [' + getTeamAbbr(u.team) + ']' : ''}` : a; }).join(', ') || '—';
+    const assignees = (t.assignees || []).map(a => { const u = users.find(u => String(u.id).trim().toUpperCase() === String(a).trim().toUpperCase()); return u ? u.name : a; }).join('<br>') || '—';
     const p = t.progress || 0;
     
     // Tính tỷ lệ thực hiện / kế hoạch
@@ -752,7 +752,8 @@ function openTaskModal(task) {
   const picker = $('assignee-picker-list');
   if (picker) picker.innerHTML = '';
   
-  populateAssigneePicker();
+  const initialAssignees = isEdit ? (task.assignees || []) : [];
+  populateAssigneePicker(initialAssignees);
 
   if (isEdit) {
     $('task-id').value = task.id;
@@ -762,7 +763,8 @@ function openTaskModal(task) {
     $('task-due').value = toInputDate(task.dueDate);
     $('task-plan-value').value = task.planValue || '';
     $('task-notes').value = task.notes || '';
-    // Assignees
+    
+    // Select assignees in DOM
     (task.assignees || []).forEach(aId => {
       const chip = document.querySelector(`.assignee-chip[data-id="${aId}"]`);
       if (chip) chip.classList.add('selected');
@@ -788,12 +790,15 @@ function openUserModal(user) {
 }
 
 /* ===== Assignee Picker ===== */
-function populateAssigneePicker() {
+function populateAssigneePicker(preselectedIds = []) {
   const picker = $('assignee-picker');
   if (!picker) return;
 
   // Remember currently selected assignees
-  const selectedIds = [...document.querySelectorAll('.assignee-chip.selected')].map(c => c.dataset.id);
+  let selectedIds = [...document.querySelectorAll('.assignee-chip.selected')].map(c => c.dataset.id);
+  if (preselectedIds.length > 0) {
+    selectedIds = [...new Set([...selectedIds, ...preselectedIds])];
+  }
 
   const teamFilter = ($('modal-team-filter') ? $('modal-team-filter').value : '');
   const searchFilter = ($('modal-assignee-search') ? $('modal-assignee-search').value : '').toLowerCase().trim();
@@ -806,9 +811,7 @@ function populateAssigneePicker() {
     let html = '';
     if (alreadySelected.length > 0) {
       html += alreadySelected.map(u => {
-        const teamAbbr = getTeamAbbr(u.team);
-        const teamBadge = teamAbbr ? ` <span class="chip-team-badge">${teamAbbr}</span>` : '';
-        return `<div class="assignee-chip selected" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}${teamBadge}</div>`;
+        return `<div class="assignee-chip selected" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}</div>`;
       }).join('');
       html += `<div class="assignee-picker-divider"><span>Chọn tổ để thêm người</span></div>`;
     }
@@ -834,18 +837,14 @@ function populateAssigneePicker() {
     // Show filtered users grouped by team if a team is selected
     html += filteredUsers.map(u => {
       const isSelected = selectedIds.includes(u.id) ? ' selected' : '';
-      const teamAbbr = getTeamAbbr(u.team);
-      const teamBadge = teamAbbr && !teamFilter ? ` <span class="chip-team-badge">${teamAbbr}</span>` : '';
-      return `<div class="assignee-chip${isSelected}" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}${teamBadge}</div>`;
+      return `<div class="assignee-chip${isSelected}" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}</div>`;
     }).join('');
 
     // Append already-selected users from other teams (dimmed indicator)
     if (extraSelected.length > 0) {
       html += `<div class="assignee-picker-divider"><span>Đã chọn từ tổ khác</span></div>`;
       html += extraSelected.map(u => {
-        const teamAbbr = getTeamAbbr(u.team);
-        const teamBadge = teamAbbr ? ` <span class="chip-team-badge">${teamAbbr}</span>` : '';
-        return `<div class="assignee-chip selected other-team" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}${teamBadge}</div>`;
+        return `<div class="assignee-chip selected other-team" data-id="${u.id}" onclick="this.classList.toggle('selected')"><i class="far fa-circle-user"></i> ${u.name}</div>`;
       }).join('');
     }
   } else {
@@ -1219,7 +1218,7 @@ function renderGanttView(tasks) {
         task.assignees.forEach(assigneeId => {
           const user = users.find(u => String(u.id).trim().toUpperCase() === String(assigneeId).trim().toUpperCase());
           if (user) {
-            assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name} (${user.id})">${getInitials(user.name)}</div>`;
+            assigneesHtml += `<div class="gantt-bar-avatar" title="${user.name}">${getInitials(user.name)}</div>`;
           }
         });
         assigneesHtml += '</div>';
