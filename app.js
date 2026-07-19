@@ -189,6 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
           task.progress = 100;
         } else {
           task.status = 'overdue';
+          if (task.subtasks && task.subtasks.length > 0) {
+            const completed = task.subtasks.filter(s => s.completed).length;
+            task.progress = Math.round((completed / task.subtasks.length) * 100);
+          } else {
+            task.progress = 0;
+          }
         }
       } else if (!val) {
         task.status = 'inprogress';

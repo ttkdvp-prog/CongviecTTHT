@@ -2034,6 +2034,13 @@ document.addEventListener('DOMContentLoaded', () => {
           task.progress = 100;
         } else {
           task.status = 'overdue';
+          // Tính lại tiến độ theo công việc con
+          if (task.subtasks && task.subtasks.length > 0) {
+            const completed = task.subtasks.filter(s => s.completed).length;
+            task.progress = Math.round((completed / task.subtasks.length) * 100);
+          } else {
+            task.progress = 0;
+          }
         }
       } else if (!val) {
         // Xóa ngày làm xong → quay về Đang thực hiện
