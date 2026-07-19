@@ -869,7 +869,7 @@ function switchView(viewType) {
   }
   if (viewType === 'notetasks') {
     setTimeout(() => {
-      document.querySelectorAll('#note-tasks-tbody .note-notes-input').forEach(el => {
+      document.querySelectorAll('#note-table-body .note-notes-input').forEach(el => {
         autoResizeTextarea(el);
       });
     }, 100);

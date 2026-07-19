@@ -389,7 +389,7 @@ function setupNavigation() {
       if (window.innerWidth < 768) sidebar.classList.remove('mobile-open');
       if (view === 'notetasks') {
         setTimeout(() => {
-          document.querySelectorAll('#note-tasks-tbody .note-notes-input').forEach(el => {
+          document.querySelectorAll('#note-table-body .note-notes-input').forEach(el => {
             autoResizeTextarea(el);
           });
         }, 100);
