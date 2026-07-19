@@ -168,6 +168,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Xử lý thay đổi ngày làm xong trực tiếp trên bảng
+  document.addEventListener('change', async e => {
+    if (e.target.classList.contains('table-completion-date-input')) {
+      const taskId = e.target.dataset.id;
+      const val = e.target.value || '';
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      task.completionDate = val;
+      
+      try {
+        await api.post('updateTask', { data: task });
+        toast('Đã lưu ngày làm xong!', 'success');
+      } catch (err) {
+        console.error(err);
+        toast('Lỗi khi lưu ngày làm xong!', 'error');
+      }
+    }
+  });
+
   // Đăng ký sự kiện tìm kiếm & đánh giá thống kê
   const searchStatsBtn = $('stats-btn-search');
   if (searchStatsBtn) {
@@ -421,16 +441,16 @@ function renderListView(tasks) {
     
     return `<tr>
       <td><strong>${t.title}</strong></td>
-      <td><span class="badge badge-${t.priority}">${priorityText(t.priority)}</span></td>
       <td><span class="badge badge-${t.status}">${statusText(t.status)}</span></td>
       <td>${assignees}</td>
       <td>${fmtDate(t.startDate)}</td>
       <td>${fmtDate(t.dueDate)}</td>
+      <td><input type="date" class="table-completion-date-input" value="${t.completionDate || ''}" data-id="${t.id}" style="width: 130px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.85rem; outline: none; transition: all 0.2s; font-family: inherit;"></td>
       <td><div class="progress-sm"><div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><span>${p}%</span></div></td>
       <td>${plan}</td>
       <td><input type="number" class="table-actual-input" value="${actual}" data-id="${t.id}" min="0" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); text-align: center; padding: 4px 6px; font-size: 0.9rem; font-weight: 500; outline: none; transition: all 0.2s;"></td>
       <td class="ratio-cell"><strong style="color: ${plan > 0 && actual >= plan ? '#00c48c' : 'inherit'};">${ratio}</strong></td>
-      <td><textarea class="table-note-textarea" data-id="${t.id}" rows="1" style="width: 100%; min-width: 150px; max-width: 250px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: none; overflow-y: hidden; min-height: 34px; outline: none; transition: all 0.2s;" placeholder="Nhập ghi chú...">${t.notes || ''}</textarea></td>
+      <td><textarea class="table-note-textarea" data-id="${t.id}" rows="1" style="width: 100%; min-width: 150px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: var(--text); padding: 6px; font-size: 0.85rem; font-family: inherit; resize: vertical; overflow-y: hidden; min-height: 34px; outline: none; transition: all 0.2s; white-space: pre-wrap; word-break: break-word;" placeholder="Nhập ghi chú...">${t.notes || ''}</textarea></td>
       <td><div class="table-actions">
         <button class="btn-edit" title="Sửa" onclick="editTask('${t.id}')"><i class="fas fa-pen"></i></button>
         <button class="btn-del" title="Xóa" onclick="delTask('${t.id}')"><i class="fas fa-trash"></i></button>
@@ -1808,13 +1828,19 @@ function calculateAndRenderStats() {
   
   // 1. Tính toán thống kê theo Tổ
   const teamStatsTbody = $('team-stats-tbody');
+  const teamStatsTfoot = $('team-stats-tfoot');
   teamStatsTbody.innerHTML = '';
+  if (teamStatsTfoot) teamStatsTfoot.innerHTML = '';
   
   const teamsToProcess = teamFilterVal ? allTeams.filter(t => isTeamMatch(t, teamFilterVal)) : allTeams;
   
   if (teamsToProcess.length === 0) {
     teamStatsTbody.innerHTML = '<tr><td colspan="7" class="empty-cell" style="text-align: center; padding: 20px;">Không có dữ liệu tổ</td></tr>';
   } else {
+    // Biến tổng cộng cấp Tổ
+    let totalTeamAssigned = 0, totalTeamInprogress = 0, totalTeamCompleted = 0;
+    let totalTeamBacklog = 0, totalTeamOverdue = 0, totalTeamCumulativeBacklog = 0;
+
     teamsToProcess.forEach(team => {
       // Lấy danh sách thành viên thuộc tổ này
       const teamUserIds = users.filter(u => isTeamMatch(u.team, team)).map(u => u.id);
@@ -1852,6 +1878,14 @@ function calculateAndRenderStats() {
           cumulativeBacklog++;
         }
       });
+
+      // Cộng dồn vào tổng
+      totalTeamAssigned += assignedInMonth;
+      totalTeamInprogress += inprogressInMonth;
+      totalTeamCompleted += completedInMonth;
+      totalTeamBacklog += backlogInMonth;
+      totalTeamOverdue += overdueInMonth;
+      totalTeamCumulativeBacklog += cumulativeBacklog;
       
       teamStatsTbody.innerHTML += `
         <tr>
@@ -1865,17 +1899,38 @@ function calculateAndRenderStats() {
         </tr>
       `;
     });
+
+    // Render dòng tổng cộng cấp Tổ
+    if (teamStatsTfoot) {
+      teamStatsTfoot.innerHTML = `
+        <tr style="border-top: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); font-weight: 700;">
+          <td style="padding: 12px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;"><i class="fas fa-calculator" style="margin-right: 6px; color: var(--accent);"></i>Tổng cộng</td>
+          <td style="text-align: center; padding: 12px; font-size: 1.05rem;">${totalTeamAssigned}</td>
+          <td style="text-align: center; padding: 12px; color: var(--accent2); font-size: 1.05rem;">${totalTeamInprogress}</td>
+          <td style="text-align: center; padding: 12px; color: var(--accent); font-size: 1.05rem;">${totalTeamCompleted}</td>
+          <td style="text-align: center; padding: 12px; color: var(--amber); font-size: 1.05rem;">${totalTeamBacklog}</td>
+          <td style="text-align: center; padding: 12px; color: var(--rose); font-size: 1.05rem;">${totalTeamOverdue}</td>
+          <td style="text-align: center; padding: 12px; background: rgba(244,63,94,0.1); color: var(--rose); font-size: 1.05rem;">${totalTeamCumulativeBacklog}</td>
+        </tr>
+      `;
+    }
   }
   
   // 2. Tính toán thống kê theo Cá nhân
   const personalStatsTbody = $('personal-stats-tbody');
+  const personalStatsTfoot = $('personal-stats-tfoot');
   personalStatsTbody.innerHTML = '';
+  if (personalStatsTfoot) personalStatsTfoot.innerHTML = '';
   
   const usersToProcess = teamFilterVal ? users.filter(u => isTeamMatch(u.team, teamFilterVal)) : users;
   
   if (usersToProcess.length === 0) {
     personalStatsTbody.innerHTML = '<tr><td colspan="8" class="empty-cell" style="text-align: center; padding: 20px;">Không có thành viên nào</td></tr>';
   } else {
+    // Biến tổng cộng cấp Cá nhân
+    let totalPersonalAssigned = 0, totalPersonalInprogress = 0, totalPersonalCompleted = 0;
+    let totalPersonalBacklog = 0, totalPersonalOverdue = 0, totalPersonalCumulativeBacklog = 0;
+
     usersToProcess.forEach(user => {
       // Lấy các công việc được giao cho cá nhân này
       const userTasks = allTasks.filter(t => (t.assignees || []).includes(user.id));
@@ -1908,6 +1963,14 @@ function calculateAndRenderStats() {
           cumulativeBacklog++;
         }
       });
+
+      // Cộng dồn vào tổng
+      totalPersonalAssigned += assignedInMonth;
+      totalPersonalInprogress += inprogressInMonth;
+      totalPersonalCompleted += completedInMonth;
+      totalPersonalBacklog += backlogInMonth;
+      totalPersonalOverdue += overdueInMonth;
+      totalPersonalCumulativeBacklog += cumulativeBacklog;
       
       const userTeamName = user.team || 'Chưa phân tổ';
       
@@ -1924,5 +1987,21 @@ function calculateAndRenderStats() {
         </tr>
       `;
     });
+
+    // Render dòng tổng cộng cấp Cá nhân
+    if (personalStatsTfoot) {
+      personalStatsTfoot.innerHTML = `
+        <tr style="border-top: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); font-weight: 700;">
+          <td style="padding: 12px; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;" colspan="2"><i class="fas fa-calculator" style="margin-right: 6px; color: var(--accent2);"></i>Tổng cộng</td>
+          <td style="text-align: center; padding: 12px; font-size: 1.05rem;">${totalPersonalAssigned}</td>
+          <td style="text-align: center; padding: 12px; color: var(--accent2); font-size: 1.05rem;">${totalPersonalInprogress}</td>
+          <td style="text-align: center; padding: 12px; color: var(--accent); font-size: 1.05rem;">${totalPersonalCompleted}</td>
+          <td style="text-align: center; padding: 12px; color: var(--amber); font-size: 1.05rem;">${totalPersonalBacklog}</td>
+          <td style="text-align: center; padding: 12px; color: var(--rose); font-size: 1.05rem;">${totalPersonalOverdue}</td>
+          <td style="text-align: center; padding: 12px; background: rgba(244,63,94,0.1); color: var(--rose); font-size: 1.05rem;">${totalPersonalCumulativeBacklog}</td>
+        </tr>
+      `;
+    }
   }
 }
+

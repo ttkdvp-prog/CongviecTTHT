@@ -128,7 +128,7 @@ function setupSheets() {
       tasks = ss.insertSheet("Tasks");
       tasks.appendRow([
         "ID", "Tiêu đề", "Mô tả", "Trạng thái", "Mức độ ưu tiên", 
-        "Ngày bắt đầu", "Ngày kết thúc", "Tiến độ", "Kế hoạch", "Thực hiện", "Tỷ lệ", "Ghi chú"
+        "Ngày bắt đầu", "Ngày kết thúc", "Tiến độ", "Kế hoạch", "Thực hiện", "Tỷ lệ", "Ghi chú", "Ngày làm xong"
       ]);
     }
     
@@ -551,7 +551,7 @@ function getTasks() {
     const sheets = setupSheets();
     
     // Lấy dữ liệu công việc
-    const tasksData = sheets.tasks.getRange(2, 1, Math.max(1, sheets.tasks.getLastRow() - 1), 15).getValues();
+    const tasksData = sheets.tasks.getRange(2, 1, Math.max(1, sheets.tasks.getLastRow() - 1), 16).getValues();
     const subtasksData = sheets.subtasks.getRange(2, 1, Math.max(1, sheets.subtasks.getLastRow() - 1), 4).getValues();
     const assigneesData = sheets.assignees.getRange(2, 1, Math.max(1, sheets.assignees.getLastRow() - 1), 4).getValues();
     const attachmentsData = sheets.attachments.getRange(2, 1, Math.max(1, sheets.attachments.getLastRow() - 1), 4).getValues();
@@ -645,7 +645,6 @@ function getTasks() {
         }
       }
       
-      // Tạo đối tượng công việc
       const task = {
         id: taskId,
         title: String(row[1]),
@@ -658,6 +657,7 @@ function getTasks() {
         planValue: row[11] !== undefined && row[11] !== "" ? Number(row[11]) : 0,
         actualValue: row[12] !== undefined && row[12] !== "" ? Number(row[12]) : 0,
         notes: row[14] !== undefined ? String(row[14]) : "",
+        completionDate: row[15] !== undefined ? String(row[15]) : "",
         subtasks: subtasks,
         assignees: assignees,
         attachments: attachments
@@ -727,7 +727,8 @@ function addTask(taskData) {
       taskData.planValue !== undefined ? Number(taskData.planValue) : 0,
       taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0,
       ratioFormula,
-      taskData.notes || ""
+      taskData.notes || "",
+      taskData.completionDate || ""
     ]);
     
     // Thêm công việc con
@@ -882,8 +883,8 @@ function updateTask(taskData) {
       progress = 0;
     }
 
-    // Cập nhật thông tin công việc bằng 1 lệnh duy nhất (Cột 2 đến Cột 15 = 14 cột)
-    sheets.tasks.getRange(taskRowIndex, 2, 1, 14).setValues([[
+    // Cập nhật thông tin công việc bằng 1 lệnh duy nhất (Cột 2 đến Cột 16 = 15 cột)
+    sheets.tasks.getRange(taskRowIndex, 2, 1, 15).setValues([[
       taskData.title,
       taskData.description || "",
       assigneeIds,
@@ -897,7 +898,8 @@ function updateTask(taskData) {
       taskData.planValue !== undefined ? Number(taskData.planValue) : 0,
       taskData.actualValue !== undefined ? Number(taskData.actualValue) : 0,
       `=IF(L${taskRowIndex}>0; M${taskRowIndex}/L${taskRowIndex}; 0)`,
-      taskData.notes || ""
+      taskData.notes || "",
+      taskData.completionDate || ""
     ]]);
     
     // Xóa công việc con cũ và thêm công việc con mới
