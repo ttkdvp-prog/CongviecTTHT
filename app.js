@@ -745,7 +745,6 @@ function openTaskModal(task) {
   $('task-form').reset();
   $('task-id').value = '';
   $('subtask-list').innerHTML = '';
-  $('modal-team-filter').value = '';
   $('modal-assignee-search').value = '';
   $('task-notes').value = '';
   // Clear previous selections to avoid carrying them over
@@ -753,6 +752,20 @@ function openTaskModal(task) {
   if (picker) picker.innerHTML = '';
   
   const initialAssignees = isEdit ? (task.assignees || []) : [];
+  
+  // Tự động chọn Tổ của người phụ trách đầu tiên nếu có
+  if (isEdit && initialAssignees.length > 0) {
+    const firstAssigneeId = initialAssignees[0];
+    const user = users.find(u => String(u.id).trim().toUpperCase() === String(firstAssigneeId).trim().toUpperCase());
+    if (user && user.team) {
+      $('modal-team-filter').value = user.team;
+    } else {
+      $('modal-team-filter').value = '';
+    }
+  } else {
+    $('modal-team-filter').value = '';
+  }
+  
   populateAssigneePicker(initialAssignees);
 
   if (isEdit) {
