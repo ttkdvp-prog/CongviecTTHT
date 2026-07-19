@@ -698,39 +698,41 @@ function setupTaskForm() {
   $('task-form').addEventListener('submit', async e => {
     e.preventDefault();
     const btn = $('save-task-btn');
+    const originalBtnText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
 
-    const selectedAssignees = [...document.querySelectorAll('.assignee-chip.selected')].map(c => c.dataset.id);
-    const subtasks = [...$('subtask-list').querySelectorAll('.subtask-item')].map(el => ({
-      text: el.querySelector('label').textContent,
-      completed: el.querySelector('input[type="checkbox"]').checked
-    }));
-
-    const completedCount = subtasks.filter(s => s.completed).length;
-    const progress = subtasks.length > 0 ? Math.round(completedCount / subtasks.length * 100) : 0;
-
-    const startVal = $('task-start').value;
-    const dueVal = $('task-due').value;
-
-    const taskData = {
-      title: $('task-title').value.trim(),
-      description: $('task-desc').value.trim(),
-      priority: taskId ? (allTasks.find(t => t.id === taskId)?.priority || 'medium') : 'medium',
-      status: taskId ? (allTasks.find(t => t.id === taskId)?.status || 'inprogress') : 'inprogress',
-      startDate: startVal ? fromInputDate(startVal) : '',
-      dueDate: dueVal ? fromInputDate(dueVal) : '',
-      progress,
-      planValue: Number($('task-plan-value').value) || 0,
-      actualValue: taskId ? (allTasks.find(t => t.id === taskId)?.actualValue || 0) : 0,
-      notes: $('task-notes').value.trim(),
-      assignees: selectedAssignees,
-      subtasks,
-      attachments: []
-    };
-
-    const taskId = $('task-id').value;
     try {
+      const selectedAssignees = [...document.querySelectorAll('.assignee-chip.selected')].map(c => c.dataset.id);
+      const subtasks = [...$('subtask-list').querySelectorAll('.subtask-item')].map(el => ({
+        text: el.querySelector('label').textContent,
+        completed: el.querySelector('input[type="checkbox"]').checked
+      }));
+
+      const completedCount = subtasks.filter(s => s.completed).length;
+      const progress = subtasks.length > 0 ? Math.round(completedCount / subtasks.length * 100) : 0;
+
+      const startVal = $('task-start') ? $('task-start').value : '';
+      const dueVal = $('task-due') ? $('task-due').value : '';
+
+      const taskId = $('task-id') ? $('task-id').value : '';
+
+      const taskData = {
+        title: $('task-title') ? $('task-title').value.trim() : '',
+        description: $('task-desc') ? $('task-desc').value.trim() : '',
+        priority: taskId ? (allTasks.find(t => t.id === taskId)?.priority || 'medium') : 'medium',
+        status: taskId ? (allTasks.find(t => t.id === taskId)?.status || 'inprogress') : 'inprogress',
+        startDate: startVal ? fromInputDate(startVal) : '',
+        dueDate: dueVal ? fromInputDate(dueVal) : '',
+        progress,
+        planValue: $('task-plan-value') ? (Number($('task-plan-value').value) || 0) : 0,
+        actualValue: taskId ? (allTasks.find(t => t.id === taskId)?.actualValue || 0) : 0,
+        notes: $('task-notes') ? $('task-notes').value.trim() : '',
+        assignees: selectedAssignees,
+        subtasks,
+        attachments: []
+      };
+
       let result;
       if (taskId) {
         taskData.id = taskId;
