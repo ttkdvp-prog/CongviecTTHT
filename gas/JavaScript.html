@@ -5605,26 +5605,47 @@ function calculateAndRenderStats() {
       if (matchingTasks.length === 0) {
         jobStatsTbody.innerHTML = `<tr><td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: var(--text3);"><i class="fas fa-circle-info" style="font-size: 2rem; margin-bottom: 10px; display: block; opacity: 0.3;"></i>Không tìm thấy công việc nào khớp từ khoá "${keyword}" trong tháng này</td></tr>`;
       } else {
-        // Tạo danh sách các dòng cần hiển thị (mỗi công việc là một dòng kèm danh sách tổ tham gia)
-        const reportRows = [];
+        // Gom nhóm và cộng tổng các công việc trùng tên của cùng tổ, đồng thời lọc theo tổ được chọn
+        const groupedSummary = {};
 
         matchingTasks.forEach(task => {
           const taskAssignees = task.assignees || [];
           const teamsSet = new Set();
+          
           taskAssignees.forEach(aId => {
             const user = users.find(u => String(u.id).trim().toUpperCase() === String(aId).trim().toUpperCase());
             if (user && user.team) {
+              if (teamFilterVal && !isTeamMatch(user.team, teamFilterVal)) {
+                return;
+              }
               teamsSet.add(user.team);
             }
           });
+
+          // Nếu có lọc tổ cụ thể và không có thành viên nào của tổ đó tham gia, bỏ qua task này
+          if (teamFilterVal && teamsSet.size === 0) {
+            return;
+          }
+
           const teamsStr = teamsSet.size > 0 ? Array.from(teamsSet).join(', ') : 'Chưa phân tổ';
-          reportRows.push({
-            teams: teamsStr,
-            title: task.title || '',
-            plan: task.planValue || 0,
-            actual: task.actualValue || 0
-          });
+          const title = (task.title || '').trim();
+          const planVal = task.planValue || 0;
+          const actualVal = task.actualValue || 0;
+
+          const key = `${teamsStr} ||| ${title}`;
+          if (!groupedSummary[key]) {
+            groupedSummary[key] = {
+              teams: teamsStr,
+              title: title,
+              plan: 0,
+              actual: 0
+            };
+          }
+          groupedSummary[key].plan += planVal;
+          groupedSummary[key].actual += actualVal;
         });
+
+        const reportRows = Object.values(groupedSummary);
 
         // Sắp xếp các hàng theo Tên Tổ, sau đó theo Tiêu đề công việc
         reportRows.sort((a, b) => {
