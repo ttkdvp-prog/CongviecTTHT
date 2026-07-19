@@ -356,6 +356,7 @@ function autoResizeTextarea(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
 }
+window.autoResizeTextarea = autoResizeTextarea;
 
 /* ===== Loading ===== */
 function showLoading() { loadingBar.className = 'loading-bar active'; }
@@ -386,6 +387,13 @@ function setupNavigation() {
       $(view + '-view').classList.add('active');
       $('page-title').textContent = link.querySelector('span').textContent;
       if (window.innerWidth < 768) sidebar.classList.remove('mobile-open');
+      if (view === 'notetasks') {
+        setTimeout(() => {
+          document.querySelectorAll('#note-tasks-tbody .note-notes-input').forEach(el => {
+            autoResizeTextarea(el);
+          });
+        }, 100);
+      }
     });
   });
 }

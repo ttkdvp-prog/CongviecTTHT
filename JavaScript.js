@@ -867,6 +867,13 @@ function switchView(viewType) {
   if (viewType === 'gantt') {
    setTimeout(initGanttScrollSync, 300); // Chờ DOM render xong
   }
+  if (viewType === 'notetasks') {
+    setTimeout(() => {
+      document.querySelectorAll('#note-tasks-tbody .note-notes-input').forEach(el => {
+        autoResizeTextarea(el);
+      });
+    }, 100);
+  }
 }
 
 // Xử lý công việc con
@@ -6009,4 +6016,5 @@ function autoResizeTextarea(el) {
   el.style.height = 'auto';
   el.style.height = el.scrollHeight + 'px';
 }
+window.autoResizeTextarea = autoResizeTextarea;
 </script>
