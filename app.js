@@ -1,6 +1,28 @@
 /* ===== API Layer ===== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzP7tqnlPoQE10FKdNGzk5vdhpck_UtMCqqK-Udod1sjGfsYcy2GtBi5J8A4Ff7sk66/exec';
 
+const navMap = {
+  'dashboard': 'dashboard-view',
+  'kanban': 'kanban-view',
+  'list': 'list-view',
+  'gantt': 'gantt-view',
+  'users': 'users-view',
+  'documents': 'documents-view',
+  'stats': 'stats-view',
+  'notetasks': 'notetasks-view'
+};
+
+const viewTitles = {
+  'dashboard': 'Tổng quan',
+  'kanban': 'Bảng Kanban',
+  'list': 'Danh sách',
+  'gantt': 'Biểu đồ Gantt',
+  'users': 'Quản lý người dùng',
+  'documents': 'Quản lý tài liệu',
+  'stats': 'Đánh giá & Thống kê',
+  'notetasks': 'Công việc lưu ý'
+};
+
 const api = {
   async get(action) {
     try {
@@ -26,6 +48,7 @@ let allTasks = [];
 let users = [];
 let allTeams = [];
 let allDocuments = [];
+let allNoteTasks = [];
 let currentGanttMonth = new Date().getMonth();
 let currentGanttYear = new Date().getFullYear();
 
@@ -288,13 +311,15 @@ function setupNavigation() {
 async function loadAllData() {
   showLoading();
   try {
-    const [tasks, usersData, teamsData, docsData] = await Promise.all([
+    const [tasks, usersData, teamsData, docsData, notesData] = await Promise.all([
       api.get('getTasks'),
       api.get('getUsers'),
       api.get('getTeams'),
-      api.get('getDocuments')
+      api.get('getDocuments'),
+      api.get('getNoteTasks')
     ]);
     allTasks = Array.isArray(tasks) ? tasks : [];
+    allNoteTasks = Array.isArray(notesData) ? notesData : [];
     
     // Tự động kiểm tra quá hạn cho tất cả các task khi vừa tải về
     const today = new Date();
@@ -357,10 +382,12 @@ function renderAll() {
   renderUsersView();
   renderGanttView();
   renderDocumentsView();
+  renderNoteTasksView();
   populateAssigneePicker();
   populateFilterDropdowns();
   populateTeamFilter();
   populateModalTeamFilter();
+  populateNoteTeamFilter();
   populateDocFilterOptions();
   renderStatsView();
 }
@@ -2097,4 +2124,191 @@ function calculateAndRenderStats() {
     }
   }
 }
+    }
+  }
+}
 
+/* ===== Note Tasks View ===== */
+function populateNoteTeamFilter() {
+  const noteTeamFilter = $('note-team-filter');
+  const modalNoteTeam = $('note-team');
+  if (!noteTeamFilter || !modalNoteTeam) return;
+  
+  const options = '<option value="">Tất cả tổ</option>' + allTeams.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+  noteTeamFilter.innerHTML = options;
+  modalNoteTeam.innerHTML = '<option value="">-- Chọn tổ --</option>' + allTeams.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+}
+
+function renderNoteTasksView(notes) {
+  const list = notes || allNoteTasks;
+  const tbody = $('note-table-body');
+  if (!tbody) return;
+  
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-cell"><i class="fas fa-inbox"></i> Không có công việc lưu ý nào</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = list.map(t => {
+    return `<tr>
+      <td><strong>${t.title}</strong></td>
+      <td style="max-width:200px;white-space:normal;">${t.description || ''}</td>
+      <td><span class="badge" style="background:rgba(59,130,246,0.1);color:#3b82f6">${t.team || 'Chung'}</span></td>
+      <td>${fmtDate(t.startDate)}</td>
+      <td>${fmtDate(t.dueDate)}</td>
+      <td>${fmtDate(t.completionDate)}</td>
+      <td><span class="badge badge-${t.status}">${statusText(t.status)}</span></td>
+      <td style="max-width:150px;white-space:normal;">${t.notes || ''}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-edit" title="Sửa" onclick="editNoteTask('${t.id}')"><i class="fas fa-pen"></i></button>
+          <button class="btn-del" title="Xóa" onclick="delNoteTask('${t.id}')"><i class="fas fa-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openNoteModal(id) {
+  const modal = $('note-modal');
+  const form = $('note-form');
+  const title = $('note-modal-title');
+  if (!modal || !form) return;
+  
+  form.reset();
+  
+  if (id) {
+    const t = allNoteTasks.find(x => x.id === id);
+    if (t) {
+      title.innerHTML = '<i class="fas fa-pen"></i> Sửa việc lưu ý';
+      $('note-id').value = t.id;
+      $('note-title').value = t.title;
+      $('note-desc').value = t.description || '';
+      $('note-team').value = t.team || '';
+      $('note-status').value = t.status || 'inprogress';
+      $('note-start').value = toInputDate(t.startDate);
+      $('note-due').value = toInputDate(t.dueDate);
+      $('note-completion').value = toInputDate(t.completionDate);
+      $('note-notes').value = t.notes || '';
+    }
+  } else {
+    title.innerHTML = '<i class="fas fa-plus-circle"></i> Thêm việc lưu ý mới';
+    $('note-id').value = '';
+    $('note-status').value = 'inprogress';
+  }
+  
+  modal.classList.add('active');
+}
+
+function editNoteTask(id) { openNoteModal(id); }
+
+async function delNoteTask(id) {
+  if (!confirm('Bạn có chắc muốn xóa công việc lưu ý này?')) return;
+  const idx = allNoteTasks.findIndex(t => t.id === id);
+  if (idx > -1) {
+    const backup = { ...allNoteTasks[idx] };
+    allNoteTasks.splice(idx, 1);
+    renderNoteTasksView();
+    toast('Đang xóa việc lưu ý...', 'warning');
+    const res = await api.post('deleteNoteTask', { id });
+    if (res && res.success) {
+      toast('Đã xóa việc lưu ý!', 'success');
+    } else {
+      allNoteTasks.splice(idx, 0, backup);
+      renderNoteTasksView();
+      toast('Lỗi khi xóa: ' + (res ? res.message : 'Unknown'), 'error');
+    }
+  }
+}
+
+// Events cho NoteTasks
+document.addEventListener('DOMContentLoaded', () => {
+  const addNoteBtn = $('add-note-btn');
+  if (addNoteBtn) addNoteBtn.addEventListener('click', () => openNoteModal());
+  
+  const noteRefreshBtn = $('note-refresh-btn');
+  if (noteRefreshBtn) noteRefreshBtn.addEventListener('click', refreshData);
+  
+  const noteSearchInput = $('note-search-input');
+  if (noteSearchInput) {
+    noteSearchInput.addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const team = $('note-team-filter').value;
+      let filtered = allNoteTasks.filter(t => t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q)));
+      if (team) filtered = filtered.filter(t => t.team === team);
+      renderNoteTasksView(filtered);
+    });
+  }
+  
+  const noteTeamFilter = $('note-team-filter');
+  if (noteTeamFilter) {
+    noteTeamFilter.addEventListener('change', (e) => {
+      const team = e.target.value;
+      const q = $('note-search-input').value.toLowerCase();
+      let filtered = allNoteTasks;
+      if (team) filtered = filtered.filter(t => t.team === team);
+      if (q) filtered = filtered.filter(t => t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q)));
+      renderNoteTasksView(filtered);
+    });
+  }
+  
+  const noteForm = $('note-form');
+  if (noteForm) {
+    noteForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const saveBtn = $('save-note-btn');
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+      saveBtn.disabled = true;
+      
+      try {
+        const id = $('note-id').value;
+        const taskData = {
+          id: id,
+          title: $('note-title').value,
+          description: $('note-desc').value,
+          team: $('note-team').value,
+          status: $('note-status').value,
+          startDate: fromInputDate($('note-start').value),
+          dueDate: fromInputDate($('note-due').value),
+          completionDate: fromInputDate($('note-completion').value),
+          notes: $('note-notes').value
+        };
+        
+        let optimisticTask = { ...taskData };
+        if (!id) optimisticTask.id = 'temp-' + Date.now();
+        
+        if (id) {
+          const idx = allNoteTasks.findIndex(t => t.id === id);
+          if (idx > -1) allNoteTasks[idx] = optimisticTask;
+        } else {
+          allNoteTasks.push(optimisticTask);
+        }
+        
+        $('note-modal').classList.remove('active');
+        renderNoteTasksView();
+        
+        const action = id ? 'updateNoteTask' : 'addNoteTask';
+        const res = await api.post(action, { data: taskData });
+        
+        if (res && res.success) {
+          if (!id && res.taskId) {
+            const idx = allNoteTasks.findIndex(t => t.id === optimisticTask.id);
+            if (idx > -1) allNoteTasks[idx].id = res.taskId;
+          }
+          toast('Đã lưu công việc lưu ý!', 'success');
+        } else {
+          refreshData(); // Revert
+          toast('Lỗi khi lưu: ' + (res ? res.message : 'Unknown'), 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        toast('Có lỗi xảy ra: ' + err.message, 'error');
+      } finally {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+      }
+    });
+  }
+});
